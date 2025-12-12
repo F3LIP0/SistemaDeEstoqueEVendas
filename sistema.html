@@ -1,0 +1,1021 @@
+<!-- sistema.html - Frontend COMPLETO em um arquivo só -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Estoque e Vendas</title>
+    <style>
+        /* RESET & BASE */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: #f5f7fa; 
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        /* LOGIN PAGE */
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        .login-card h1 { 
+            color: #2d3748; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        
+        .login-card .subtitle { 
+            color: #718096; 
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group { 
+            margin-bottom: 20px; 
+            text-align: left;
+        }
+        
+        .input-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn-login:hover { transform: translateY(-2px); }
+        .btn-login:active { transform: translateY(0); }
+        
+        /* DASHBOARD */
+        .dashboard { display: none; }
+        
+        .sidebar {
+            width: 250px;
+            background: #2d3748;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding: 20px;
+        }
+        
+        .logo { 
+            font-size: 24px; 
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        
+        .logo span { color: #667eea; }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #cbd5e0;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: #4a5568;
+            color: white;
+        }
+        
+        .nav-item i { margin-right: 12px; width: 20px; }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .top-bar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* CARDS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border-left: 5px solid;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); }
+        
+        .stat-card:nth-child(1) { border-color: #48bb78; }
+        .stat-card:nth-child(2) { border-color: #ed8936; }
+        .stat-card:nth-child(3) { border-color: #4299e1; }
+        .stat-card:nth-child(4) { border-color: #9f7aea; }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #2d3748;
+        }
+        
+        .stat-change {
+            color: #48bb78;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* GRÁFICO */
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        /* TABELAS */
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th { 
+            color: #4a5568; 
+            font-weight: 600;
+            background: #f7fafc;
+        }
+        
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-success { background: #c6f6d5; color: #22543d; }
+        .badge-warning { background: #feebc8; color: #744210; }
+        .badge-danger { background: #fed7d7; color: #742a2a; }
+        
+        /* PÁGINAS */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* FORMS */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover { background: #5a67d8; }
+        
+        /* RESPONSIVO */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar .nav-text { display: none; }
+            .main-content { margin-left: 70px; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+    
+    <!-- Ícones Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- =========================================== -->
+    <!-- TELA DE LOGIN -->
+    <!-- =========================================== -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <h1>Acesso ao Sistema</h1>
+            <p class="subtitle">Entre com suas credenciais</p>
+            
+            <div class="input-group">
+                <label>E-mail ou Usuário</label>
+                <input type="text" id="email" placeholder="seu@email.com">
+            </div>
+            
+            <div class="input-group">
+                <label>Senha</label>
+                <input type="password" id="senha" placeholder="......">
+            </div>
+            
+            <button class="btn-login" onclick="login()">Entrar</button>
+            
+            <p style="margin-top: 20px; color: #a0aec0; font-size: 14px;">
+                Sistema de Gerenciamento © 2025
+            </p>
+            
+            <div id="loginError" style="color: #f56565; margin-top: 15px; display: none;">
+                Credenciais inválidas!
+            </div>
+        </div>
+    </div>
+    
+    <!-- =========================================== -->
+    <!-- DASHBOARD PRINCIPAL -->
+    <!-- =========================================== -->
+    <div id="dashboard" class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">Sistema <span>Gerenciamento</span></div>
+            
+            <nav>
+                <a href="#dashboard" class="nav-item active" onclick="mostrarPagina('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                
+                <a href="#produtos" class="nav-item" onclick="mostrarPagina('produtos')">
+                    <i class="fas fa-box"></i>
+                    <span class="nav-text">Produtos</span>
+                </a>
+                
+                <a href="#vendas" class="nav-item" onclick="mostrarPagina('vendas')">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="nav-text">Vendas</span>
+                </a>
+                
+                <a href="#estoque" class="nav-item" onclick="mostrarPagina('estoque')">
+                    <i class="fas fa-warehouse"></i>
+                    <span class="nav-text">Estoque</span>
+                </a>
+                
+                <a href="#ponto" class="nav-item" onclick="mostrarPagina('ponto')">
+                    <i class="fas fa-clock"></i>
+                    <span class="nav-text">Ponto</span>
+                </a>
+                
+                <div style="margin-top: 30px;">
+                    <a href="#config" class="nav-item" onclick="mostrarPagina('config')">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-text">Configurações</span>
+                    </a>
+                    
+                    <a href="#" class="nav-item" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="nav-text">Sair</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- Conteúdo Principal -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h2 id="pageTitle">Dashboard</h2>
+                <div class="user-info">
+                    <div class="user-avatar" id="avatar">AD</div>
+                    <div>
+                        <div id="userName">Administrador</div>
+                        <small id="userType" style="color: #718096;">Administrador</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: DASHBOARD -->
+            <!-- =========================================== -->
+            <div id="pageDashboard" class="page active">
+                <h3>Visão Geral</h3>
+                <p style="color: #718096; margin-bottom: 30px;">Acompanhe o desempenho do seu negócio</p>
+                
+                <!-- Cards de Estatísticas -->
+                <div class="stats-grid" id="statsCards">
+                    <!-- JavaScript preenche aqui -->
+                </div>
+                
+                <!-- Gráfico -->
+                <div class="chart-container">
+                    <h3>Vendas dos Últimos 7 Dias</h3>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                
+                <!-- Tabelas -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Últimas Vendas -->
+                    <div class="table-container">
+                        <h3>Últimas Vendas</h3>
+                        <table id="recentSales">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JavaScript preenche -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Produtos Baixo Estoque -->
+                    <div class="table-container">
+                        <h3>Alertas de Estoque</h3>
+                        <table id="lowStock">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Estoque</th>
+                                    <th>Mínimo</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JavaScript preenche -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: PRODUTOS -->
+            <!-- =========================================== -->
+            <div id="pageProdutos" class="page">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <h3>Gestão de Produtos</h3>
+                    <button class="btn btn-primary" onclick="abrirModalProduto()">
+                        <i class="fas fa-plus"></i> Novo Produto
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabelaProdutos">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço Venda</th>
+                                <th>Estoque</th>
+                                <th>Categoria</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: VENDAS -->
+            <!-- =========================================== -->
+            <div id="pageVendas" class="page">
+                <h3>Vendas</h3>
+                <div class="table-container">
+                    <table id="tabelaVendas">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Pagamento</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preence -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: ESTOQUE -->
+            <!-- =========================================== -->
+            <div id="pageEstoque" class="page">
+                <h3>Movimentações de Estoque</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="registrarEntrada()">
+                        <i class="fas fa-plus-circle"></i> Entrada
+                    </button>
+                    <button class="btn" style="background: #f56565; color: white;" onclick="registrarSaida()">
+                        <i class="fas fa-minus-circle"></i> Saída
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabelaMovimentacoes">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Produto</th>
+                                <th>Tipo</th>
+                                <th>Quantidade</th>
+                                <th>Responsável</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: PONTO -->
+            <!-- =========================================== -->
+            <div id="pagePonto" class="page">
+                <h3>Controle de Ponto</h3>
+                <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+                    <button class="btn btn-primary" onclick="registrarPonto('entrada')">
+                        <i class="fas fa-sign-in-alt"></i> Registrar Entrada
+                    </button>
+                    <button class="btn" style="background: #ed8936; color: white;" onclick="registrarPonto('saida')">
+                        <i class="fas fa-sign-out-alt"></i> Registrar Saída
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabelaPonto">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Entrada</th>
+                                <th>Saída</th>
+                                <th>Horas</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: CONFIGURAÇÕES -->
+            <!-- =========================================== -->
+            <div id="pageConfig" class="page">
+                <h3>Configurações do Sistema</h3>
+                
+                <div class="table-container">
+                    <h4>Usuários do Sistema</h4>
+                    <button class="btn btn-primary" onclick="abrirModalUsuario()" style="margin-bottom: 20px;">
+                        <i class="fas fa-user-plus"></i> Novo Usuário
+                    </button>
+                    
+                    <table id="tabelaUsuarios">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Tipo</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- =========================================== -->
+    <!-- MODAIS (pop-ups) -->
+    <!-- =========================================== -->
+    
+    <!-- Modal Novo Produto -->
+    <div id="modalProduto" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
+            <h3>Novo Produto</h3>
+            
+            <div style="display: grid; gap: 15px; margin: 20px 0;">
+                <input type="text" id="prodCodigo" placeholder="Código (SKU)" class="input-group">
+                <input type="text" id="prodNome" placeholder="Nome do Produto" class="input-group">
+                <input type="text" id="prodCategoria" placeholder="Categoria" class="input-group">
+                <input type="number" id="prodPrecoCusto" placeholder="Preço de Custo" class="input-group">
+                <input type="number" id="prodPrecoVenda" placeholder="Preço de Venda" class="input-group">
+                <input type="number" id="prodEstoque" placeholder="Estoque Inicial" class="input-group">
+                <input type="number" id="prodEstoqueMin" placeholder="Estoque Mínimo" value="10" class="input-group">
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" onclick="fecharModal('modalProduto')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarProduto()">Salvar Produto</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Novo Usuário -->
+    <div id="modalUsuario" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
+            <h3>Novo Usuário</h3>
+            
+            <div style="display: grid; gap: 15px; margin: 20px 0;">
+                <input type="text" id="userNome" placeholder="Nome Completo" class="input-group">
+                <input type="email" id="userEmail" placeholder="Email" class="input-group">
+                <input type="password" id="userSenha" placeholder="Senha" class="input-group">
+                <select id="userTipo" class="input-group">
+                    <option value="funcionario">Funcionário</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" onclick="fecharModal('modalUsuario')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarUsuario()">Salvar Usuário</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- =========================================== -->
+    <!-- JAVASCRIPT DO SISTEMA -->
+    <!-- =========================================== -->
+    <script>
+        // VARIÁVEIS GLOBAIS
+        let usuarioLogado = null;
+        let tokenJWT = null;
+        
+        // ===========================================
+        // FUNÇÕES DE AUTENTICAÇÃO
+        // ===========================================
+        async function login() {
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            
+            try {
+                const resposta = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                
+                if (!resposta.ok) throw new Error('Login falhou');
+                
+                const dados = await resposta.json();
+                
+                // Salva token e usuário
+                tokenJWT = dados.token;
+                usuarioLogado = dados.usuario;
+                localStorage.setItem('token', tokenJWT);
+                localStorage.setItem('usuario', JSON.stringify(usuarioLogado));
+                
+                // Atualiza interface
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'flex';
+                document.getElementById('userName').textContent = usuarioLogado.nome;
+                document.getElementById('userType').textContent = usuarioLogado.tipo;
+                document.getElementById('avatar').textContent = usuarioLogado.nome.substring(0, 2).toUpperCase();
+                
+                // Carrega dados iniciais
+                carregarDashboard();
+                carregarProdutos();
+                carregarVendas();
+                
+            } catch (erro) {
+                document.getElementById('loginError').style.display = 'block';
+                console.error('Erro login:', erro);
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            location.reload();
+        }
+        
+        // Verifica se já está logado
+        window.onload = function() {
+            const tokenSalvo = localStorage.getItem('token');
+            const usuarioSalvo = localStorage.getItem('usuario');
+            
+            if (tokenSalvo && usuarioSalvo) {
+                tokenJWT = tokenSalvo;
+                usuarioLogado = JSON.parse(usuarioSalvo);
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'flex';
+                document.getElementById('userName').textContent = usuarioLogado.nome;
+                document.getElementById('userType').textContent = usuarioLogado.tipo;
+                document.getElementById('avatar').textContent = usuarioLogado.nome.substring(0, 2).toUpperCase();
+                
+                carregarDashboard();
+                carregarProdutos();
+                carregarVendas();
+            }
+        };
+        
+        // ===========================================
+        // FUNÇÕES DO DASHBOARD
+        // ===========================================
+        async function carregarDashboard() {
+            try {
+                const resposta = await fetch('http://localhost:3000/api/dashboard/estatisticas', {
+                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                });
+                
+                const dados = await resposta.json();
+                
+                // Atualiza cards
+                document.getElementById('statsCards').innerHTML = `
+                    <div class="stat-card">
+                        <small>Vendas do Mês</small>
+                        <div class="stat-value">R$ ${formatarMoeda(dados.vendas_mes || 0)}</div>
+                        <div class="stat-change">+12.5% vs mês anterior</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <small>Estoque Baixo</small>
+                        <div class="stat-value">${dados.estoque_baixo || 0} Produtos</div>
+                        <div class="stat-change" style="color: #f56565;">Requer atenção</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <small>Novos Pedidos</small>
+                        <div class="stat-value">${dados.pedidos_hoje || 0} Pedidos</div>
+                        <div class="stat-change">Hoje</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <small>Lucro do Mês</small>
+                        <div class="stat-value">R$ ${formatarMoeda(dados.lucro_mes || 0)}</div>
+                        <div class="stat-change">+8.3% vs mês anterior</div>
+                    </div>
+                `;
+                
+                // Gráfico de vendas (mock)
+                criarGraficoVendas();
+                
+            } catch (erro) {
+                console.error('Erro dashboard:', erro);
+            }
+        }
+        
+        function criarGraficoVendas() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: [12000, 19000, 15000, 25000, 22000, 18000, 24000],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+        
+        // ===========================================
+        // FUNÇÕES DE PRODUTOS
+        // ===========================================
+        async function carregarProdutos() {
+            try {
+                const resposta = await fetch('http://localhost:3000/api/produtos');
+                const produtos = await resposta.json();
+                
+                const tbody = document.querySelector('#tabelaProdutos tbody');
+                tbody.innerHTML = produtos.map(prod => `
+                    <tr>
+                        <td>${prod.codigo}</td>
+                        <td>${prod.nome}</td>
+                        <td>R$ ${formatarMoeda(prod.preco_venda)}</td>
+                        <td>
+                            <span style="color: ${prod.estoque <= prod.estoque_minimo ? '#f56565' : '#48bb78'}">
+                                ${prod.estoque} un
+                            </span>
+                        </td>
+                        <td>${prod.categoria || '-'}</td>
+                        <td>
+                            <button onclick="editarProduto(${prod.id})" style="background: none; border: none; color: #4299e1; cursor: pointer;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (erro) {
+                console.error('Erro produtos:', erro);
+            }
+        }
+        
+        async function salvarProduto() {
+            const produto = {
+                codigo: document.getElementById('prodCodigo').value,
+                nome: document.getElementById('prodNome').value,
+                categoria: document.getElementById('prodCategoria').value,
+                preco_custo: parseFloat(document.getElementById('prodPrecoCusto').value),
+                preco_venda: parseFloat(document.getElementById('prodPrecoVenda').value),
+                estoque: parseInt(document.getElementById('prodEstoque').value),
+                estoque_minimo: parseInt(document.getElementById('prodEstoqueMin').value)
+            };
+            
+            try {
+                await fetch('http://localhost:3000/api/produtos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${tokenJWT}`
+                    },
+                    body: JSON.stringify(produto)
+                });
+                
+                fecharModal('modalProduto');
+                carregarProdutos();
+                alert('Produto salvo com sucesso!');
+                
+            } catch (erro) {
+                alert('Erro ao salvar produto');
+            }
+        }
+        
+        // ===========================================
+        // FUNÇÕES DE VENDAS
+        // ===========================================
+        async function carregarVendas() {
+            try {
+                const resposta = await fetch('http://localhost:3000/api/vendas', {
+                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                });
+                
+                const vendas = await resposta.json();
+                
+                // Tabela de vendas
+                const tbody = document.querySelector('#tabelaVendas tbody');
+                tbody.innerHTML = vendas.map(v => `
+                    <tr>
+                        <td>${v.codigo}</td>
+                        <td>${formatarData(v.data)}</td>
+                        <td>${v.cliente_nome || 'Cliente não informado'}</td>
+                        <td>R$ ${formatarMoeda(v.total)}</td>
+                        <td>${v.forma_pagamento || '-'}</td>
+                        <td><span class="badge badge-success">${v.status}</span></td>
+                    </tr>
+                `).join('');
+                
+                // Últimas vendas no dashboard
+                const recentSales = document.querySelector('#recentSales tbody');
+                recentSales.innerHTML = vendas.slice(0, 5).map(v => `
+                    <tr>
+                        <td>${v.codigo}</td>
+                        <td>${v.cliente_nome?.substring(0, 15) || 'Cliente'}</td>
+                        <td>R$ ${formatarMoeda(v.total)}</td>
+                        <td><span class="badge badge-success">${v.status}</span></td>
+                    </tr>
+                `).join('');
+                
+            } catch (erro) {
+                console.error('Erro vendas:', erro);
+            }
+        }
+        
+        // ===========================================
+        // FUNÇÕES DE NAVEGAÇÃO
+        // ===========================================
+        function mostrarPagina(pagina) {
+            // Esconde todas as páginas
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
+            
+            // Mostra a página selecionada
+            document.getElementById(`page${pagina.charAt(0).toUpperCase() + pagina.slice(1)}`).classList.add('active');
+            document.getElementById(`page${pagina.charAt(0).toUpperCase() + pagina.slice(1)}`).style.display = 'block';
+            
+            // Atualiza título
+            const titulos = {
+                'dashboard': 'Dashboard',
+                'produtos': 'Produtos',
+                'vendas': 'Vendas',
+                'estoque': 'Estoque',
+                'ponto': 'Controle de Ponto',
+                'config': 'Configurações'
+            };
+            
+            document.getElementById('pageTitle').textContent = titulos[pagina];
+            
+            // Atualiza menu ativo
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Carrega dados específicos da página
+            if (pagina === 'estoque') carregarMovimentacoes();
+            if (pagina === 'ponto') carregarPonto();
+            if (pagina === 'config') carregarUsuarios();
+        }
+        
+        // ===========================================
+        // FUNÇÕES AUXILIARES
+        // ===========================================
+        function formatarMoeda(valor) {
+            return parseFloat(valor).toFixed(2).replace('.', ',');
+        }
+        
+        function formatarData(dataString) {
+            const data = new Date(dataString);
+            return data.toLocaleDateString('pt-BR');
+        }
+        
+        function abrirModalProduto() {
+            if (usuarioLogado.tipo === 'funcionario') {
+                alert('Apenas gerentes e administradores podem criar produtos');
+                return;
+            }
+            document.getElementById('modalProduto').style.display = 'flex';
+        }
+        
+        function abrirModalUsuario() {
+            if (usuarioLogado.tipo !== 'admin') {
+                alert('Apenas administradores podem criar usuários');
+                return;
+            }
+            document.getElementById('modalUsuario').style.display = 'flex';
+        }
+        
+        function fecharModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // ===========================================
+        // FUNÇÕES FUTURAS (para implementar)
+        // ===========================================
+        async function carregarMovimentacoes() {
+            // Implementar quando tiver endpoint
+            console.log('Carregando movimentações...');
+        }
+        
+        async function carregarPonto() {
+            // Implementar quando tiver endpoint
+            console.log('Carregando ponto...');
+        }
+        
+        async function carregarUsuarios() {
+            // Implementar quando tiver endpoint
+            console.log('Carregando usuários...');
+        }
+        
+        function registrarPonto(tipo) {
+            alert(`Ponto ${tipo} registrado!`);
+        }
+        
+        function registrarEntrada() {
+            alert('Funcionalidade de entrada em desenvolvimento');
+        }
+        
+        function registrarSaida() {
+            alert('Funcionalidade de saída em desenvolvimento');
+        }
+        
+        async function salvarUsuario() {
+            const usuario = {
+                nome: document.getElementById('userNome').value,
+                email: document.getElementById('userEmail').value,
+                senha: document.getElementById('userSenha').value,
+                tipo: document.getElementById('userTipo').value
+            };
+            
+            try {
+                await fetch('http://localhost:3000/api/usuarios', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${tokenJWT}`
+                    },
+                    body: JSON.stringify(usuario)
+                });
+                
+                fecharModal('modalUsuario');
+                alert('Usuário criado com sucesso!');
+                
+            } catch (erro) {
+                alert('Erro ao criar usuário');
+            }
+        }
+        
+        function editarProduto(id) {
+            alert(`Editar produto ${id} - Em desenvolvimento`);
+        }
+    </script>
+</body>
+</html>
