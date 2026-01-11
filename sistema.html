@@ -1,27 +1,46 @@
-<!-- sistema.html - Frontend COMPLETO em um arquivo só -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de Gerenciamento de Estoque e Vendas">
+    <meta name="author" content="Sistema de Estoque">
     <title>Sistema de Estoque e Vendas</title>
+    
+    <!-- Ícones Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        /* RESET & BASE */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ============================================ */
+        /* RESET & BASE STYLES */
+        /* ============================================ */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
         body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: #f5f7fa; 
             color: #333;
             min-height: 100vh;
+            line-height: 1.6;
         }
         
+        /* ============================================ */
         /* LOGIN PAGE */
+        /* ============================================ */
         .login-container {
             display: flex;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
         
         .login-card {
@@ -85,11 +104,30 @@
             transition: transform 0.2s;
         }
         
-        .btn-login:hover { transform: translateY(-2px); }
-        .btn-login:active { transform: translateY(0); }
+        .btn-login:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
         
-        /* DASHBOARD */
-        .dashboard { display: none; }
+        .btn-login:active { 
+            transform: translateY(0); 
+        }
+        
+        .login-error {
+            color: #f56565;
+            margin-top: 15px;
+            padding: 10px;
+            background: #fed7d7;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        /* ============================================ */
+        /* DASHBOARD LAYOUT */
+        /* ============================================ */
+        .dashboard { 
+            display: none; 
+        }
         
         .sidebar {
             width: 250px;
@@ -161,7 +199,9 @@
             font-weight: bold;
         }
         
-        /* CARDS */
+        /* ============================================ */
+        /* STATS CARDS */
+        /* ============================================ */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -198,7 +238,9 @@
             font-size: 14px;
         }
         
-        /* GRÁFICO */
+        /* ============================================ */
+        /* CHARTS */
+        /* ============================================ */
         .chart-container {
             background: white;
             border-radius: 15px;
@@ -207,18 +249,27 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
         
-        /* TABELAS */
+        .chart-container h3 {
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+        
+        /* ============================================ */
+        /* TABLES */
+        /* ============================================ */
         .table-container {
             background: white;
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             margin-bottom: 20px;
+            overflow-x: auto;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 600px;
         }
         
         th, td {
@@ -231,24 +282,50 @@
             color: #4a5568; 
             font-weight: 600;
             background: #f7fafc;
+            position: sticky;
+            top: 0;
         }
         
+        tr:hover {
+            background: #f7fafc;
+            transition: background 0.2s;
+        }
+        
+        /* ============================================ */
+        /* BADGES */
+        /* ============================================ */
         .badge {
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
+            display: inline-block;
         }
         
         .badge-success { background: #c6f6d5; color: #22543d; }
         .badge-warning { background: #feebc8; color: #744210; }
         .badge-danger { background: #fed7d7; color: #742a2a; }
         
-        /* PÁGINAS */
-        .page { display: none; }
-        .page.active { display: block; }
+        /* ============================================ */
+        /* PAGE MANAGEMENT */
+        /* ============================================ */
+        .page { 
+            display: none; 
+            animation: fadeIn 0.3s ease-in;
+        }
         
+        .page.active { 
+            display: block; 
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ============================================ */
         /* FORMS */
+        /* ============================================ */
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -256,6 +333,37 @@
             margin-bottom: 20px;
         }
         
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        /* ============================================ */
+        /* BUTTONS */
+        /* ============================================ */
         .btn {
             padding: 12px 24px;
             border: none;
@@ -263,29 +371,168 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .btn-primary {
-            background: #667eea;
+            background: linear-gradient(to right, #667eea, #764ba2);
             color: white;
         }
         
-        .btn-primary:hover { background: #5a67d8; }
-        
-        /* RESPONSIVO */
-        @media (max-width: 768px) {
-            .sidebar { width: 70px; }
-            .sidebar .nav-text { display: none; }
-            .main-content { margin-left: 70px; }
-            .stats-grid { grid-template-columns: 1fr; }
+        .btn-primary:hover { 
+            background: linear-gradient(to right, #5a67d8, #6b42a0);
         }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        /* ============================================ */
+        /* MODALS */
+        /* ============================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #718096;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        /* ============================================ */
+        /* RESPONSIVE DESIGN */
+        /* ============================================ */
+        @media (max-width: 768px) {
+            .sidebar { 
+                width: 70px; 
+            }
+            
+            .sidebar .nav-text { 
+                display: none; 
+            }
+            
+            .main-content { 
+                margin-left: 70px; 
+            }
+            
+            .stats-grid { 
+                grid-template-columns: 1fr; 
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* ============================================ */
+        /* UTILITY CLASSES */
+        /* ============================================ */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-gap { gap: 10px; }
+        .flex-between { justify-content: space-between; }
+        .flex-center { justify-content: center; align-items: center; }
     </style>
-    
-    <!-- Ícones Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- =========================================== -->
@@ -312,8 +559,8 @@
                 Sistema de Gerenciamento © 2025
             </p>
             
-            <div id="loginError" style="color: #f56565; margin-top: 15px; display: none;">
-                Credenciais inválidas!
+            <div id="loginError" class="login-error">
+                Credenciais inválidas! Verifique seu email e senha.
             </div>
         </div>
     </div>
@@ -588,50 +835,104 @@
     </div>
     
     <!-- =========================================== -->
-    <!-- MODAIS (pop-ups) -->
+    <!-- MODAIS (Pop-ups) -->
     <!-- =========================================== -->
     
     <!-- Modal Novo Produto -->
-    <div id="modalProduto" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
-            <h3>Novo Produto</h3>
-            
-            <div style="display: grid; gap: 15px; margin: 20px 0;">
-                <input type="text" id="prodCodigo" placeholder="Código (SKU)" class="input-group">
-                <input type="text" id="prodNome" placeholder="Nome do Produto" class="input-group">
-                <input type="text" id="prodCategoria" placeholder="Categoria" class="input-group">
-                <input type="number" id="prodPrecoCusto" placeholder="Preço de Custo" class="input-group">
-                <input type="number" id="prodPrecoVenda" placeholder="Preço de Venda" class="input-group">
-                <input type="number" id="prodEstoque" placeholder="Estoque Inicial" class="input-group">
-                <input type="number" id="prodEstoqueMin" placeholder="Estoque Mínimo" value="10" class="input-group">
+    <div id="modalProduto" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Produto</h3>
+                <button class="modal-close" onclick="fecharModal('modalProduto')">&times;</button>
             </div>
             
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn" onclick="fecharModal('modalProduto')">Cancelar</button>
-                <button class="btn btn-primary" onclick="salvarProduto()">Salvar Produto</button>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código (SKU)</label>
+                    <input type="text" id="prodCodigo" placeholder="Ex: PROD001" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Nome do Produto</label>
+                    <input type="text" id="prodNome" placeholder="Nome completo" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <input type="text" id="prodCategoria" placeholder="Ex: Eletrônicos">
+                </div>
+                
+                <div class="form-group">
+                    <label>Preço de Custo (R$)</label>
+                    <input type="number" id="prodPrecoCusto" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Preço de Venda (R$)</label>
+                    <input type="number" id="prodPrecoVenda" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Estoque Inicial</label>
+                    <input type="number" id="prodEstoque" placeholder="0" min="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Estoque Mínimo</label>
+                <input type="number" id="prodEstoqueMin" placeholder="10" value="10" min="0">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarProduto()">
+                    <i class="fas fa-save"></i> Salvar Produto
+                </button>
             </div>
         </div>
     </div>
     
     <!-- Modal Novo Usuário -->
-    <div id="modalUsuario" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
-            <h3>Novo Usuário</h3>
+    <div id="modalUsuario" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Usuário</h3>
+                <button class="modal-close" onclick="fecharModal('modalUsuario')">&times;</button>
+            </div>
             
-            <div style="display: grid; gap: 15px; margin: 20px 0;">
-                <input type="text" id="userNome" placeholder="Nome Completo" class="input-group">
-                <input type="email" id="userEmail" placeholder="Email" class="input-group">
-                <input type="password" id="userSenha" placeholder="Senha" class="input-group">
-                <select id="userTipo" class="input-group">
+            <div class="form-group">
+                <label>Nome Completo</label>
+                <input type="text" id="userNome" placeholder="Nome completo" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="userEmail" placeholder="usuario@empresa.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="userSenha" placeholder="Senha forte" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Tipo de Usuário</label>
+                <select id="userTipo" required>
                     <option value="funcionario">Funcionário</option>
                     <option value="gerente">Gerente</option>
                     <option value="admin">Administrador</option>
                 </select>
             </div>
             
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn" onclick="fecharModal('modalUsuario')">Cancelar</button>
-                <button class="btn btn-primary" onclick="salvarUsuario()">Salvar Usuário</button>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modalUsuario')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarUsuario()">
+                    <i class="fas fa-user-plus"></i> Salvar Usuário
+                </button>
             </div>
         </div>
     </div>
@@ -640,128 +941,213 @@
     <!-- JAVASCRIPT DO SISTEMA -->
     <!-- =========================================== -->
     <script>
-        // VARIÁVEIS GLOBAIS
+        'use strict';
+        
+        // ============================================
+        // CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
+        // ============================================
+        
+        const CONFIG = {
+            API_URL: '/api', // URL relativa - funciona em qualquer ambiente (localhost, Codespaces, produção)
+            STORAGE_KEYS: {
+                TOKEN: 'token',
+                USUARIO: 'usuario'
+            }
+        };
+        
         let usuarioLogado = null;
         let tokenJWT = null;
+        let graficoVendas = null;
         
-        // ===========================================
+        // ============================================
         // FUNÇÕES DE AUTENTICAÇÃO
-        // ===========================================
+        // ============================================
+        
+        /**
+         * Realiza o login do usuário
+         */
         async function login() {
-            const email = document.getElementById('email').value;
+            const emailOrUsername = document.getElementById('email').value.trim();
             const senha = document.getElementById('senha').value;
+            const btnLogin = document.querySelector('.btn-login');
+            const errorDiv = document.getElementById('loginError');
+            
+            // Validações básicas
+            if (!emailOrUsername || !senha) {
+                mostrarErro('Preencha email/username e senha');
+                return;
+            }
+            
+            // Desabilita botão durante o login
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Entrando...';
+            errorDiv.style.display = 'none';
             
             try {
-                const resposta = await fetch('http://localhost:3000/api/login', {
+                const resposta = await fetch(`${CONFIG.API_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
+                    body: JSON.stringify({ 
+                        email: emailOrUsername,
+                        username: emailOrUsername, 
+                        senha 
+                    })
                 });
-                
-                if (!resposta.ok) throw new Error('Login falhou');
                 
                 const dados = await resposta.json();
                 
-                // Salva token e usuário
+                if (!resposta.ok) {
+                    throw new Error(dados.mensagem || 'Erro ao fazer login');
+                }
+                
+                // Salva credenciais
                 tokenJWT = dados.token;
                 usuarioLogado = dados.usuario;
-                localStorage.setItem('token', tokenJWT);
-                localStorage.setItem('usuario', JSON.stringify(usuarioLogado));
+                localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, tokenJWT);
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USUARIO, JSON.stringify(usuarioLogado));
                 
-                // Atualiza interface
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'flex';
-                document.getElementById('userName').textContent = usuarioLogado.nome;
-                document.getElementById('userType').textContent = usuarioLogado.tipo;
-                document.getElementById('avatar').textContent = usuarioLogado.nome.substring(0, 2).toUpperCase();
-                
-                // Carrega dados iniciais
-                carregarDashboard();
-                carregarProdutos();
-                carregarVendas();
+                // Redireciona para dashboard
+                inicializarDashboard();
                 
             } catch (erro) {
-                document.getElementById('loginError').style.display = 'block';
-                console.error('Erro login:', erro);
+                console.error('Erro no login:', erro);
+                errorDiv.textContent = erro.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.textContent = 'Entrar';
             }
         }
         
+        /**
+         * Realiza o logout do usuário
+         */
         function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
-            location.reload();
+            if (confirm('Deseja realmente sair do sistema?')) {
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.USUARIO);
+                location.reload();
+            }
         }
         
-        // Verifica se já está logado
-        window.onload = function() {
-            const tokenSalvo = localStorage.getItem('token');
-            const usuarioSalvo = localStorage.getItem('usuario');
+        /**
+         * Verifica se usuário já está autenticado
+         */
+        function verificarAutenticacao() {
+            const tokenSalvo = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+            const usuarioSalvo = localStorage.getItem(CONFIG.STORAGE_KEYS.USUARIO);
             
             if (tokenSalvo && usuarioSalvo) {
                 tokenJWT = tokenSalvo;
                 usuarioLogado = JSON.parse(usuarioSalvo);
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'flex';
-                document.getElementById('userName').textContent = usuarioLogado.nome;
-                document.getElementById('userType').textContent = usuarioLogado.tipo;
-                document.getElementById('avatar').textContent = usuarioLogado.nome.substring(0, 2).toUpperCase();
-                
-                carregarDashboard();
-                carregarProdutos();
-                carregarVendas();
+                inicializarDashboard();
+                return true;
             }
-        };
+            
+            return false;
+        }
         
-        // ===========================================
+        /**
+         * Inicializa o dashboard após login
+         */
+        function inicializarDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+            document.getElementById('userName').textContent = usuarioLogado.nome;
+            document.getElementById('userType').textContent = usuarioLogado.role_name || 'USER';
+            document.getElementById('avatar').textContent = usuarioLogado.nome.substring(0, 2).toUpperCase();
+            
+            // Carrega dados iniciais
+            carregarDashboard();
+            carregarProdutos();
+            carregarVendas();
+        }
+        
+        /**
+         * Mostra mensagem de erro
+         */
+        function mostrarErro(mensagem) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = mensagem;
+            errorDiv.style.display = 'block';
+        }
+        
+        // ============================================
         // FUNÇÕES DO DASHBOARD
-        // ===========================================
+        // ============================================
+        
+        /**
+         * Carrega estatísticas do dashboard
+         */
         async function carregarDashboard() {
             try {
-                const resposta = await fetch('http://localhost:3000/api/dashboard/estatisticas', {
+                const resposta = await fetch(`${CONFIG.API_URL}/dashboard/estatisticas`, {
                     headers: { 'Authorization': `Bearer ${tokenJWT}` }
                 });
                 
+                if (!resposta.ok) throw new Error('Erro ao carregar estatísticas');
+                
                 const dados = await resposta.json();
                 
-                // Atualiza cards
-                document.getElementById('statsCards').innerHTML = `
-                    <div class="stat-card">
-                        <small>Vendas do Mês</small>
-                        <div class="stat-value">R$ ${formatarMoeda(dados.vendas_mes || 0)}</div>
-                        <div class="stat-change">+12.5% vs mês anterior</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <small>Estoque Baixo</small>
-                        <div class="stat-value">${dados.estoque_baixo || 0} Produtos</div>
-                        <div class="stat-change" style="color: #f56565;">Requer atenção</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <small>Novos Pedidos</small>
-                        <div class="stat-value">${dados.pedidos_hoje || 0} Pedidos</div>
-                        <div class="stat-change">Hoje</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <small>Lucro do Mês</small>
-                        <div class="stat-value">R$ ${formatarMoeda(dados.lucro_mes || 0)}</div>
-                        <div class="stat-change">+8.3% vs mês anterior</div>
-                    </div>
-                `;
+                // Atualiza cards de estatísticas
+                atualizarCardsEstatisticas(dados);
                 
-                // Gráfico de vendas (mock)
+                // Cria gráfico de vendas
                 criarGraficoVendas();
                 
             } catch (erro) {
-                console.error('Erro dashboard:', erro);
+                console.error('Erro ao carregar dashboard:', erro);
+                alert('Erro ao carregar estatísticas');
             }
         }
         
+        /**
+         * Atualiza cards com estatísticas
+         */
+        function atualizarCardsEstatisticas(dados) {
+            document.getElementById('statsCards').innerHTML = `
+                <div class="stat-card">
+                    <small>Vendas do Mês</small>
+                    <div class="stat-value">R$ ${formatarMoeda(dados.vendas_mes || 0)}</div>
+                    <div class="stat-change">+12.5% vs mês anterior</div>
+                </div>
+                
+                <div class="stat-card">
+                    <small>Estoque Baixo</small>
+                    <div class="stat-value">${dados.estoque_baixo || 0} Produtos</div>
+                    <div class="stat-change" style="color: ${dados.estoque_baixo > 0 ? '#f56565' : '#48bb78'};">
+                        ${dados.estoque_baixo > 0 ? 'Requer atenção' : 'Tudo OK'}
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <small>Novos Pedidos</small>
+                    <div class="stat-value">${dados.pedidos_hoje || 0} Pedidos</div>
+                    <div class="stat-change">Hoje</div>
+                </div>
+                
+                <div class="stat-card">
+                    <small>Lucro do Mês</small>
+                    <div class="stat-value">R$ ${formatarMoeda(dados.lucro_mes || 0)}</div>
+                    <div class="stat-change">+8.3% vs mês anterior</div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Cria gráfico de vendas dos últimos 7 dias
+         */
         function criarGraficoVendas() {
-            const ctx = document.getElementById('salesChart').getContext('2d');
+            const ctx = document.getElementById('salesChart');
             
-            new Chart(ctx, {
+            if (!ctx) return;
+            
+            // Destroi gráfico anterior se existir
+            if (graficoVendas) {
+                graficoVendas.destroy();
+            }
+            
+            graficoVendas = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
@@ -777,35 +1163,73 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#2d3748',
+                            padding: 12,
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Vendas: R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
                     }
                 }
             });
         }
         
-        // ===========================================
+        // ============================================
         // FUNÇÕES DE PRODUTOS
-        // ===========================================
+        // ============================================
+        
+        /**
+         * Carrega lista de produtos
+         */
         async function carregarProdutos() {
             try {
-                const resposta = await fetch('http://localhost:3000/api/produtos');
-                const produtos = await resposta.json();
+                const resposta = await fetch(`${CONFIG.API_URL}/produtos`);
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar produtos');
+                
+                const dados = await resposta.json();
+                const produtos = dados.produtos || dados;
                 
                 const tbody = document.querySelector('#tabelaProdutos tbody');
+                
+                if (produtos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum produto cadastrado</td></tr>';
+                    return;
+                }
+                
                 tbody.innerHTML = produtos.map(prod => `
                     <tr>
-                        <td>${prod.codigo}</td>
-                        <td>${prod.nome}</td>
-                        <td>R$ ${formatarMoeda(prod.preco_venda)}</td>
+                        <td><strong>${prod.sku}</strong></td>
+                        <td>${prod.product_name}</td>
+                        <td>R$ ${formatarMoeda(prod.selling_price)}</td>
                         <td>
-                            <span style="color: ${prod.estoque <= prod.estoque_minimo ? '#f56565' : '#48bb78'}">
-                                ${prod.estoque} un
+                            <span style="color: ${prod.current_stock <= prod.minimum_stock ? '#f56565' : '#48bb78'}; font-weight: 600;">
+                                ${prod.current_stock} ${prod.abbreviation || 'un'}
                             </span>
                         </td>
-                        <td>${prod.categoria || '-'}</td>
+                        <td>${prod.category_name || '-'}</td>
                         <td>
-                            <button onclick="editarProduto(${prod.id})" style="background: none; border: none; color: #4299e1; cursor: pointer;">
+                            <button onclick="editarProduto(${prod.product_id})" 
+                                    class="btn btn-secondary" 
+                                    style="padding: 8px 12px; font-size: 12px;">
                                 <i class="fas fa-edit"></i>
                             </button>
                         </td>
@@ -813,23 +1237,62 @@
                 `).join('');
                 
             } catch (erro) {
-                console.error('Erro produtos:', erro);
+                console.error('Erro ao carregar produtos:', erro);
+                alert('Erro ao carregar produtos');
             }
         }
         
+        /**
+         * Abre modal para criar novo produto
+         */
+        function abrirModalProduto() {
+            if (!usuarioLogado || usuarioLogado.role_level < 2) {
+                alert('Apenas gerentes e administradores podem criar produtos');
+                return;
+            }
+            
+            // Limpa campos
+            document.getElementById('prodCodigo').value = '';
+            document.getElementById('prodNome').value = '';
+            document.getElementById('prodCategoria').value = '';
+            document.getElementById('prodPrecoCusto').value = '';
+            document.getElementById('prodPrecoVenda').value = '';
+            document.getElementById('prodEstoque').value = '0';
+            document.getElementById('prodEstoqueMin').value = '10';
+            
+            document.getElementById('modalProduto').classList.add('active');
+        }
+        
+        /**
+         * Salva novo produto
+         */
         async function salvarProduto() {
+            // Nota: Este é um exemplo simplificado. 
+            // A estrutura completa do PostgreSQL requer mais campos (unit_id, etc)
             const produto = {
-                codigo: document.getElementById('prodCodigo').value,
-                nome: document.getElementById('prodNome').value,
-                categoria: document.getElementById('prodCategoria').value,
-                preco_custo: parseFloat(document.getElementById('prodPrecoCusto').value),
-                preco_venda: parseFloat(document.getElementById('prodPrecoVenda').value),
-                estoque: parseInt(document.getElementById('prodEstoque').value),
-                estoque_minimo: parseInt(document.getElementById('prodEstoqueMin').value)
+                sku: document.getElementById('prodCodigo').value.trim(),
+                product_name: document.getElementById('prodNome').value.trim(),
+                description: document.getElementById('prodCategoria').value.trim(), // Temporário
+                cost_price: parseFloat(document.getElementById('prodPrecoCusto').value) || 0,
+                selling_price: parseFloat(document.getElementById('prodPrecoVenda').value) || 0,
+                current_stock: parseInt(document.getElementById('prodEstoque').value) || 0,
+                minimum_stock: parseInt(document.getElementById('prodEstoqueMin').value) || 10,
+                unit_id: 1 // ID padrão da unidade (você pode adicionar um select no modal)
             };
             
+            // Validações
+            if (!produto.sku || !produto.product_name) {
+                alert('SKU e nome são obrigatórios');
+                return;
+            }
+            
+            if (produto.cost_price <= 0 || produto.selling_price <= 0) {
+                alert('Preços devem ser maiores que zero');
+                return;
+            }
+            
             try {
-                await fetch('http://localhost:3000/api/produtos', {
+                const resposta = await fetch(`${CONFIG.API_URL}/produtos`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -838,70 +1301,128 @@
                     body: JSON.stringify(produto)
                 });
                 
+                const dados = await resposta.json();
+                
+                if (!resposta.ok) {
+                    throw new Error(dados.mensagem || 'Erro ao salvar produto');
+                }
+                
                 fecharModal('modalProduto');
                 carregarProdutos();
                 alert('Produto salvo com sucesso!');
                 
             } catch (erro) {
-                alert('Erro ao salvar produto');
+                console.error('Erro ao salvar produto:', erro);
+                alert(erro.message);
             }
         }
         
-        // ===========================================
+        /**
+         * Edita produto existente
+         */
+        function editarProduto(id) {
+            alert(`Editar produto ${id} - Funcionalidade em desenvolvimento`);
+        }
+        
+        // ============================================
         // FUNÇÕES DE VENDAS
-        // ===========================================
+        // ============================================
+        
+        /**
+         * Carrega lista de vendas
+         */
         async function carregarVendas() {
             try {
-                const resposta = await fetch('http://localhost:3000/api/vendas', {
+                const resposta = await fetch(`${CONFIG.API_URL}/vendas?limit=20`, {
                     headers: { 'Authorization': `Bearer ${tokenJWT}` }
                 });
                 
-                const vendas = await resposta.json();
+                if (!resposta.ok) throw new Error('Erro ao carregar vendas');
                 
-                // Tabela de vendas
-                const tbody = document.querySelector('#tabelaVendas tbody');
-                tbody.innerHTML = vendas.map(v => `
-                    <tr>
-                        <td>${v.codigo}</td>
-                        <td>${formatarData(v.data)}</td>
-                        <td>${v.cliente_nome || 'Cliente não informado'}</td>
-                        <td>R$ ${formatarMoeda(v.total)}</td>
-                        <td>${v.forma_pagamento || '-'}</td>
-                        <td><span class="badge badge-success">${v.status}</span></td>
-                    </tr>
-                `).join('');
+                const dados = await resposta.json();
+                const vendas = dados.vendas || dados;
+                
+                // Tabela completa de vendas
+                atualizarTabelaVendas(vendas);
                 
                 // Últimas vendas no dashboard
-                const recentSales = document.querySelector('#recentSales tbody');
-                recentSales.innerHTML = vendas.slice(0, 5).map(v => `
-                    <tr>
-                        <td>${v.codigo}</td>
-                        <td>${v.cliente_nome?.substring(0, 15) || 'Cliente'}</td>
-                        <td>R$ ${formatarMoeda(v.total)}</td>
-                        <td><span class="badge badge-success">${v.status}</span></td>
-                    </tr>
-                `).join('');
+                atualizarUltimasVendas(vendas.slice(0, 5));
                 
             } catch (erro) {
-                console.error('Erro vendas:', erro);
+                console.error('Erro ao carregar vendas:', erro);
             }
         }
         
-        // ===========================================
+        /**
+         * Atualiza tabela completa de vendas
+         */
+        function atualizarTabelaVendas(vendas) {
+            const tbody = document.querySelector('#tabelaVendas tbody');
+            
+            if (!tbody) return;
+            
+            if (vendas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma venda registrada</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = vendas.map(v => `
+                <tr>
+                    <td><strong>${v.order_number}</strong></td>
+                    <td>${formatarData(v.order_date)}</td>
+                    <td>${v.customer_name || 'Cliente não informado'}</td>
+                    <td><strong>R$ ${formatarMoeda(v.total_amount)}</strong></td>
+                    <td>${v.payment_method || '-'}</td>
+                    <td><span class="badge badge-success">${v.status}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        /**
+         * Atualiza últimas vendas no dashboard
+         */
+        function atualizarUltimasVendas(vendas) {
+            const tbody = document.querySelector('#recentSales tbody');
+            
+            if (!tbody) return;
+            
+            if (vendas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sem vendas recentes</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = vendas.map(v => `
+                <tr>
+                    <td><strong>${v.order_number}</strong></td>
+                    <td>${(v.customer_name || 'Cliente').substring(0, 20)}</td>
+                    <td><strong>R$ ${formatarMoeda(v.total_amount)}</strong></td>
+                    <td><span class="badge badge-success">${v.status}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        // ============================================
         // FUNÇÕES DE NAVEGAÇÃO
-        // ===========================================
+        // ============================================
+        
+        /**
+         * Navega entre páginas do sistema
+         */
         function mostrarPagina(pagina) {
-            // Esconde todas as páginas
+            // Remove classe active de todas as páginas
             document.querySelectorAll('.page').forEach(p => {
                 p.classList.remove('active');
-                p.style.display = 'none';
             });
             
-            // Mostra a página selecionada
-            document.getElementById(`page${pagina.charAt(0).toUpperCase() + pagina.slice(1)}`).classList.add('active');
-            document.getElementById(`page${pagina.charAt(0).toUpperCase() + pagina.slice(1)}`).style.display = 'block';
+            // Ativa página selecionada
+            const paginaId = `page${pagina.charAt(0).toUpperCase() + pagina.slice(1)}`;
+            const elemento = document.getElementById(paginaId);
             
-            // Atualiza título
+            if (elemento) {
+                elemento.classList.add('active');
+            }
+            
+            // Atualiza título da página
             const titulos = {
                 'dashboard': 'Dashboard',
                 'produtos': 'Produtos',
@@ -911,13 +1432,19 @@
                 'config': 'Configurações'
             };
             
-            document.getElementById('pageTitle').textContent = titulos[pagina];
+            document.getElementById('pageTitle').textContent = titulos[pagina] || 'Dashboard';
             
             // Atualiza menu ativo
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
-            event.target.closest('.nav-item').classList.add('active');
+            
+            if (event && event.target) {
+                const navItem = event.target.closest('.nav-item');
+                if (navItem) {
+                    navItem.classList.add('active');
+                }
+            }
             
             // Carrega dados específicos da página
             if (pagina === 'estoque') carregarMovimentacoes();
@@ -925,78 +1452,98 @@
             if (pagina === 'config') carregarUsuarios();
         }
         
-        // ===========================================
+        // ============================================
         // FUNÇÕES AUXILIARES
-        // ===========================================
+        // ============================================
+        
+        /**
+         * Formata valor em moeda brasileira
+         */
         function formatarMoeda(valor) {
-            return parseFloat(valor).toFixed(2).replace('.', ',');
+            const numero = parseFloat(valor) || 0;
+            return numero.toFixed(2).replace('.', ',');
         }
         
+        /**
+         * Formata data para padrão brasileiro
+         */
         function formatarData(dataString) {
+            if (!dataString) return '-';
             const data = new Date(dataString);
             return data.toLocaleDateString('pt-BR');
         }
         
-        function abrirModalProduto() {
-            if (usuarioLogado.tipo === 'funcionario') {
-                alert('Apenas gerentes e administradores podem criar produtos');
-                return;
-            }
-            document.getElementById('modalProduto').style.display = 'flex';
+        /**
+         * Formata data e hora
+         */
+        function formatarDataHora(dataString) {
+            if (!dataString) return '-';
+            const data = new Date(dataString);
+            return data.toLocaleString('pt-BR');
         }
         
+        /**
+         * Abre modal específico
+         */
+        function abrirModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+        
+        /**
+         * Fecha modal específico
+         */
+        function fecharModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+        
+        /**
+         * Abre modal de criação de usuário
+         */
         function abrirModalUsuario() {
-            if (usuarioLogado.tipo !== 'admin') {
+            if (!usuarioLogado || usuarioLogado.tipo !== 'admin') {
                 alert('Apenas administradores podem criar usuários');
                 return;
             }
-            document.getElementById('modalUsuario').style.display = 'flex';
+            
+            // Limpa campos
+            document.getElementById('userNome').value = '';
+            document.getElementById('userEmail').value = '';
+            document.getElementById('userSenha').value = '';
+            document.getElementById('userTipo').value = 'funcionario';
+            
+            abrirModal('modalUsuario');
         }
         
-        function fecharModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-        
-        // ===========================================
-        // FUNÇÕES FUTURAS (para implementar)
-        // ===========================================
-        async function carregarMovimentacoes() {
-            // Implementar quando tiver endpoint
-            console.log('Carregando movimentações...');
-        }
-        
-        async function carregarPonto() {
-            // Implementar quando tiver endpoint
-            console.log('Carregando ponto...');
-        }
-        
-        async function carregarUsuarios() {
-            // Implementar quando tiver endpoint
-            console.log('Carregando usuários...');
-        }
-        
-        function registrarPonto(tipo) {
-            alert(`Ponto ${tipo} registrado!`);
-        }
-        
-        function registrarEntrada() {
-            alert('Funcionalidade de entrada em desenvolvimento');
-        }
-        
-        function registrarSaida() {
-            alert('Funcionalidade de saída em desenvolvimento');
-        }
-        
+        /**
+         * Salva novo usuário
+         */
         async function salvarUsuario() {
             const usuario = {
-                nome: document.getElementById('userNome').value,
-                email: document.getElementById('userEmail').value,
+                nome: document.getElementById('userNome').value.trim(),
+                email: document.getElementById('userEmail').value.trim(),
                 senha: document.getElementById('userSenha').value,
                 tipo: document.getElementById('userTipo').value
             };
             
+            // Validações
+            if (!usuario.nome || !usuario.email || !usuario.senha) {
+                alert('Todos os campos são obrigatórios');
+                return;
+            }
+            
+            if (usuario.senha.length < 6) {
+                alert('A senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+            
             try {
-                await fetch('http://localhost:3000/api/usuarios', {
+                const resposta = await fetch(`${CONFIG.API_URL}/usuarios`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1005,17 +1552,94 @@
                     body: JSON.stringify(usuario)
                 });
                 
+                const dados = await resposta.json();
+                
+                if (!resposta.ok) {
+                    throw new Error(dados.mensagem || 'Erro ao criar usuário');
+                }
+                
                 fecharModal('modalUsuario');
                 alert('Usuário criado com sucesso!');
+                carregarUsuarios();
                 
             } catch (erro) {
-                alert('Erro ao criar usuário');
+                console.error('Erro ao criar usuário:', erro);
+                alert(erro.message);
             }
         }
         
-        function editarProduto(id) {
-            alert(`Editar produto ${id} - Em desenvolvimento`);
+        // ============================================
+        // FUNÇÕES EM DESENVOLVIMENTO
+        // ============================================
+        
+        /**
+         * Carrega movimentações de estoque
+         */
+        async function carregarMovimentacoes() {
+            console.log('Carregando movimentações...');
+            // TODO: Implementar quando endpoint estiver pronto
         }
+        
+        /**
+         * Carrega registros de ponto
+         */
+        async function carregarPonto() {
+            console.log('Carregando registros de ponto...');
+            // TODO: Implementar quando endpoint estiver pronto
+        }
+        
+        /**
+         * Carrega lista de usuários
+         */
+        async function carregarUsuarios() {
+            console.log('Carregando usuários...');
+            // TODO: Implementar quando endpoint estiver pronto
+        }
+        
+        /**
+         * Registra ponto (entrada/saída)
+         */
+        function registrarPonto(tipo) {
+            alert(`Ponto de ${tipo} registrado!`);
+            // TODO: Implementar registro de ponto
+        }
+        
+        /**
+         * Registra entrada no estoque
+         */
+        function registrarEntrada() {
+            alert('Funcionalidade de entrada em desenvolvimento');
+            // TODO: Implementar entrada de estoque
+        }
+        
+        /**
+         * Registra saída do estoque
+         */
+        function registrarSaida() {
+            alert('Funcionalidade de saída em desenvolvimento');
+            // TODO: Implementar saída de estoque
+        }
+        
+        // ============================================
+        // INICIALIZAÇÃO DO SISTEMA
+        // ============================================
+        
+        /**
+         * Executa quando a página carrega
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Sistema de Estoque e Vendas - Inicializado');
+            
+            // Verifica se usuário já está autenticado
+            verificarAutenticacao();
+            
+            // Adiciona listener para tecla Enter no login
+            document.getElementById('senha').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+        });
     </script>
 </body>
 </html>
