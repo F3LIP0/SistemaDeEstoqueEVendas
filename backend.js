@@ -852,6 +852,387 @@ app.post('/api/produtos', autenticar, autorizar(2, 3), async (req, res) => {
 });
 
 /**
+ * @route PUT /api/produtos/:id
+ * @desc Atualiza um produto existente
+ * @access Privado - Manager/Admin
+ */
+app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
+    const productId = req.params.id;
+    const { 
+        product_name, description, cost_price, selling_price, 
+        minimum_stock, maximum_stock, current_stock, category_id, brand_id, barcode
+    } = req.body;
+
+    // Validações básicas
+    if (!productId) {
+        return res.status(400).json({ 
+            erro: 'ID inválido',
+            mensagem: 'ID do produto é obrigatório'
+        });
+    }
+
+    // Validação: preço de venda >= preço de custo
+    if (selling_price !== undefined && cost_price !== undefined) {
+        if (typeof cost_price === 'number' && typeof selling_price === 'number' && selling_price < cost_price) {
+            return res.status(400).json({
+                erro: 'Preço de venda inválido',
+                mensagem: 'Preço de venda não pode ser menor que o preço de custo'
+            });
+        }
+    }
+
+    // Validação: estoque mínimo <= estoque máximo
+    if (minimum_stock !== undefined && maximum_stock !== undefined) {
+        if (Number(minimum_stock) > Number(maximum_stock)) {
+            return res.status(400).json({
+                erro: 'Estoque inválido',
+                mensagem: 'Estoque mínimo não pode ser maior que o estoque máximo'
+            });
+        }
+    }
+
+    try {
+        if (supabase) {
+            // Verificar se produto existe
+            const { data: existe } = await supabase
+                .from('products')
+                .select('product_id')
+                .eq('product_id', productId)
+                .limit(1);
+            if (!existe || existe.length === 0) {
+                return res.status(404).json({ erro: 'Produto não encontrado', mensagem: 'ID do produto não existe' });
+            }
+
+            // Preparar dados para atualização
+            const updates = {};
+            if (product_name !== undefined) updates.product_name = product_name;
+            if (description !== undefined) updates.description = description;
+            if (cost_price !== undefined) updates.cost_price = cost_price;
+            if (selling_price !== undefined) updates.selling_price = selling_price;
+            if (minimum_stock !== undefined) updates.minimum_stock = minimum_stock;
+            if (maximum_stock !== undefined) updates.maximum_stock = maximum_stock;
+            if (current_stock !== undefined) updates.current_stock = current_stock;
+            if (category_id !== undefined) updates.category_id = category_id;
+            if (brand_id !== undefined) updates.brand_id = brand_id;
+            if (barcode !== undefined) updates.barcode = barcode;
+            updates.updated_by = req.usuario.id;
+            updates.updated_at = new Date().toISOString();
+
+            const { data, error } = await supabase
+                .from('products')
+                .update(updates)
+                .eq('product_id', productId)
+                .select('product_id')
+                .single();
+            
+            if (error) throw error;
+            return res.json({ sucesso: true, mensagem: 'Produto atualizado com sucesso', id: data.product_id });
+        }
+
+        // Fallback Postgres
+        const updates = [];
+        const values = [];
+        let paramCount = 1;
+
+        if (product_name !== undefined) { updates.push(`product_name = $${paramCount++}`); values.push(product_name); }
+        if (description !== undefined) { updates.push(`description = $${paramCount++}`); values.push(description); }
+        if (cost_price !== undefined) { updates.push(`cost_price = $${paramCount++}`); values.push(cost_price); }
+        if (selling_price !== undefined) { updates.push(`selling_price = $${paramCount++}`); values.push(selling_price); }
+        if (minimum_stock !== undefined) { updates.push(`minimum_stock = $${paramCount++}`); values.push(minimum_stock); }
+        if (maximum_stock !== undefined) { updates.push(`maximum_stock = $${paramCount++}`); values.push(maximum_stock); }
+        if (current_stock !== undefined) { updates.push(`current_stock = $${paramCount++}`); values.push(current_stock); }
+        if (category_id !== undefined) { updates.push(`category_id = $${paramCount++}`); values.push(category_id); }
+        if (brand_id !== undefined) { updates.push(`brand_id = $${paramCount++}`); values.push(brand_id); }
+        if (barcode !== undefined) { updates.push(`barcode = $${paramCount++}`); values.push(barcode); }
+        
+        updates.push(`updated_by = $${paramCount++}`);
+        values.push(req.usuario.id);
+        updates.push(`updated_at = $${paramCount++}`);
+        values.push(new Date().toISOString());
+        
+        values.push(productId);
+
+        const updateQuery = `
+            UPDATE products
+            SET ${updates.join(', ')}
+            WHERE product_id = $${paramCount}
+            RETURNING product_id
+        `;
+
+        const result = await pool.query(updateQuery, values);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ erro: 'Produto não encontrado', mensagem: 'ID do produto não existe' });
+        }
+        return res.json({ sucesso: true, mensagem: 'Produto atualizado com sucesso', id: result.rows[0].product_id });
+        
+    } catch (error) {
+        console.error('Erro ao atualizar produto:', error);
+        res.status(500).json({ 
+            erro: 'Erro no servidor',
+            mensagem: 'Erro ao atualizar produto'
+        });
+    }
+});
+
+/**
+ * @route DELETE /api/produtos/:id
+ * @desc Deleta um produto (soft-delete - marca como inativo)
+ * @access Privado - Admin
+ */
+app.delete('/api/produtos/:id', autenticar, autorizar(3), async (req, res) => {
+    const productId = req.params.id;
+
+    if (!productId) {
+        return res.status(400).json({ 
+            erro: 'ID inválido',
+            mensagem: 'ID do produto é obrigatório'
+        });
+    }
+
+    try {
+        if (supabase) {
+            // Verificar se produto existe
+            const { data: existe } = await supabase
+                .from('products')
+                .select('product_id')
+                .eq('product_id', productId)
+                .limit(1);
+            if (!existe || existe.length === 0) {
+                return res.status(404).json({ erro: 'Produto não encontrado', mensagem: 'ID do produto não existe' });
+            }
+
+            // Soft-delete: marcar como inativo
+            const { data, error } = await supabase
+                .from('products')
+                .update({ is_active: false, updated_by: req.usuario.id, updated_at: new Date().toISOString() })
+                .eq('product_id', productId)
+                .select('product_id')
+                .single();
+            
+            if (error) throw error;
+            return res.json({ sucesso: true, mensagem: 'Produto deletado com sucesso', id: data.product_id });
+        }
+
+        // Fallback Postgres
+        const updateQuery = `
+            UPDATE products
+            SET is_active = false, updated_by = $1, updated_at = $2
+            WHERE product_id = $3
+            RETURNING product_id
+        `;
+        const result = await pool.query(updateQuery, [req.usuario.id, new Date().toISOString(), productId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ erro: 'Produto não encontrado', mensagem: 'ID do produto não existe' });
+        }
+        return res.json({ sucesso: true, mensagem: 'Produto deletado com sucesso', id: result.rows[0].product_id });
+        
+    } catch (error) {
+        console.error('Erro ao deletar produto:', error);
+        res.status(500).json({ 
+            erro: 'Erro no servidor',
+            mensagem: 'Erro ao deletar produto'
+        });
+    }
+});
+
+/**
+ * @route PUT /api/usuarios/:id
+ * @desc Atualiza um usuário existente
+ * @access Privado - Admin
+ */
+app.put('/api/usuarios/:id', autenticar, autorizar(3), async (req, res) => {
+    const userId = req.params.id;
+    const { full_name, email, username, phone, role_name } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ 
+            erro: 'ID inválido',
+            mensagem: 'ID do usuário é obrigatório'
+        });
+    }
+
+    try {
+        if (supabase) {
+            // Verificar se usuário existe
+            const { data: existe } = await supabase
+                .from('users')
+                .select('user_id')
+                .eq('user_id', userId)
+                .limit(1);
+            if (!existe || existe.length === 0) {
+                return res.status(404).json({ erro: 'Usuário não encontrado', mensagem: 'ID do usuário não existe' });
+            }
+
+            // Verificar unicidade de email e username se forem alterados
+            if (email || username) {
+                let conflictQuery = supabase.from('users').select('user_id');
+                if (email) conflictQuery = conflictQuery.eq('email', email);
+                if (username) conflictQuery = conflictQuery.eq('username', username);
+                const { data: conflitos } = await conflictQuery.neq('user_id', userId);
+                if (conflitos && conflitos.length > 0) {
+                    return res.status(409).json({ erro: 'Usuário já existe', mensagem: 'Email ou username já está cadastrado' });
+                }
+            }
+
+            const updates = {};
+            if (full_name !== undefined) updates.full_name = full_name;
+            if (email !== undefined) updates.email = email;
+            if (username !== undefined) updates.username = username;
+            if (phone !== undefined) updates.phone = phone;
+            if (role_name !== undefined) {
+                const { data: roles } = await supabase.from('roles').select('role_id').eq('role_name', role_name).limit(1);
+                if (!roles || roles.length === 0) {
+                    return res.status(400).json({ erro: 'Role inválido', mensagem: 'Tipo de usuário não encontrado' });
+                }
+                updates.role_id = roles[0].role_id;
+            }
+            updates.updated_at = new Date().toISOString();
+
+            const { data, error } = await supabase
+                .from('users')
+                .update(updates)
+                .eq('user_id', userId)
+                .select('user_id')
+                .single();
+            
+            if (error) throw error;
+            return res.json({ sucesso: true, mensagem: 'Usuário atualizado com sucesso', id: data.user_id });
+        }
+
+        // Fallback Postgres
+        const updates = [];
+        const values = [];
+        let paramCount = 1;
+
+        if (full_name !== undefined) { updates.push(`full_name = $${paramCount++}`); values.push(full_name); }
+        if (email !== undefined) { updates.push(`email = $${paramCount++}`); values.push(email); }
+        if (username !== undefined) { updates.push(`username = $${paramCount++}`); values.push(username); }
+        if (phone !== undefined) { updates.push(`phone = $${paramCount++}`); values.push(phone); }
+        if (role_name !== undefined) {
+            const roleResult = await pool.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
+            if (roleResult.rows.length === 0) {
+                return res.status(400).json({ erro: 'Role inválido', mensagem: 'Tipo de usuário não encontrado' });
+            }
+            updates.push(`role_id = $${paramCount++}`);
+            values.push(roleResult.rows[0].role_id);
+        }
+        
+        updates.push(`updated_at = $${paramCount++}`);
+        values.push(new Date().toISOString());
+        values.push(userId);
+
+        const updateQuery = `
+            UPDATE users
+            SET ${updates.join(', ')}
+            WHERE user_id = $${paramCount}
+            RETURNING user_id
+        `;
+
+        const result = await pool.query(updateQuery, values);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ erro: 'Usuário não encontrado', mensagem: 'ID do usuário não existe' });
+        }
+        return res.json({ sucesso: true, mensagem: 'Usuário atualizado com sucesso', id: result.rows[0].user_id });
+        
+    } catch (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        if (error.code === '23505') {
+            return res.status(409).json({ 
+                erro: 'Usuário já existe',
+                mensagem: 'Email ou username já está cadastrado'
+            });
+        }
+        res.status(500).json({ 
+            erro: 'Erro no servidor',
+            mensagem: 'Erro ao atualizar usuário'
+        });
+    }
+});
+
+/**
+ * @route DELETE /api/usuarios/:id
+ * @desc Deleta um usuário do sistema
+ * @access Privado - Admin
+ */
+app.delete('/api/usuarios/:id', autenticar, autorizar(3), async (req, res) => {
+    const userId = req.params.id;
+
+    if (!userId) {
+        return res.status(400).json({ 
+            erro: 'ID inválido',
+            mensagem: 'ID do usuário é obrigatório'
+        });
+    }
+
+    try {
+        if (supabase) {
+            // Verificar se usuário existe
+            const { data: existe } = await supabase
+                .from('users')
+                .select('user_id, role_id')
+                .eq('user_id', userId)
+                .limit(1);
+            if (!existe || existe.length === 0) {
+                return res.status(404).json({ erro: 'Usuário não encontrado', mensagem: 'ID do usuário não existe' });
+            }
+
+            // Proteger contra deleção do último admin
+            if (existe[0].role_id === 3) { // ADMIN
+                const { data: admins } = await supabase.from('users').select('user_id').eq('role_id', 3);
+                if (admins && admins.length <= 1) {
+                    return res.status(400).json({ erro: 'Operação não permitida', mensagem: 'Não pode deletar o último administrador' });
+                }
+            }
+
+            // Soft-delete: manter registro para auditoria
+            const { data, error } = await supabase
+                .from('users')
+                .update({ is_active: false, updated_at: new Date().toISOString() })
+                .eq('user_id', userId)
+                .select('user_id')
+                .single();
+            
+            if (error) throw error;
+            return res.json({ sucesso: true, mensagem: 'Usuário deletado com sucesso', id: data.user_id });
+        }
+
+        // Fallback Postgres
+        const checkQuery = 'SELECT user_id, role_id FROM users WHERE user_id = $1';
+        const checkResult = await pool.query(checkQuery, [userId]);
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ erro: 'Usuário não encontrado', mensagem: 'ID do usuário não existe' });
+        }
+
+        // Proteger contra deleção do último admin
+        if (checkResult.rows[0].role_id === 3) { // ADMIN
+            const adminQuery = 'SELECT COUNT(*) as count FROM users WHERE role_id = 3 AND is_active = true';
+            const adminResult = await pool.query(adminQuery);
+            if (parseInt(adminResult.rows[0].count) <= 1) {
+                return res.status(400).json({ erro: 'Operação não permitida', mensagem: 'Não pode deletar o último administrador' });
+            }
+        }
+
+        const updateQuery = `
+            UPDATE users
+            SET is_active = false, updated_at = $1
+            WHERE user_id = $2
+            RETURNING user_id
+        `;
+        const result = await pool.query(updateQuery, [new Date().toISOString(), userId]);
+        
+        return res.json({ sucesso: true, mensagem: 'Usuário deletado com sucesso', id: result.rows[0].user_id });
+        
+    } catch (error) {
+        console.error('Erro ao deletar usuário:', error);
+        res.status(500).json({ 
+            erro: 'Erro no servidor',
+            mensagem: 'Erro ao deletar usuário'
+        });
+    }
+});
+
+/**
  * @route GET /api/vendas
  * @desc Lista vendas com paginação
  * @access Privado
@@ -1093,14 +1474,20 @@ app.listen(CONFIG.PORT, async () => {
     console.log(`   Servidor rodando em http://localhost:${CONFIG.PORT}`);
     console.log('   ========================================');
     console.log('\n📌 Endpoints disponíveis:');
-    console.log('   POST /api/login                      - Autenticação');
-    console.log('   POST /api/usuarios                   - Criar usuário (Manager/Admin)');
-    console.log('   GET  /api/produtos                   - Listar produtos');
-    console.log('   POST /api/produtos                   - Criar produto (Manager/Admin)');
-    console.log('   GET  /api/vendas                     - Listar vendas (Autenticado)');
-    console.log('   GET  /api/dashboard/estatisticas     - Estatísticas (Autenticado)');
-    console.log('   GET  /api/ponto                      - Controle de ponto (Autenticado)');
-    console.log('   GET  /api/movimentacoes              - Movimentações (Manager/Admin)');
+    console.log('   POST   /api/login                    - Autenticação');
+    console.log('   POST   /api/usuarios                 - Criar usuário (Admin)');
+    console.log('   GET    /api/usuarios                 - Listar usuários (Manager/Admin)');
+    console.log('   PUT    /api/usuarios/:id             - Atualizar usuário (Admin)');
+    console.log('   DELETE /api/usuarios/:id             - Deletar usuário (Admin)');
+    console.log('   GET    /api/produtos                 - Listar produtos (Todos)');
+    console.log('   POST   /api/produtos                 - Criar produto (Manager/Admin)');
+    console.log('   PUT    /api/productos/:id            - Atualizar produto (Manager/Admin)');
+    console.log('   DELETE /api/productos/:id            - Deletar produto (Admin)');
+    console.log('   GET    /api/vendas                   - Listar vendas (Autenticado)');
+    console.log('   GET    /api/dashboard/estatisticas   - Estatísticas (Autenticado)');
+    console.log('   GET    /api/ponto                    - Controle de ponto (Autenticado)');
+    console.log('   GET    /api/movimentacoes            - Movimentações (Manager/Admin)');
+    console.log('   GET    /api/health                   - Status do servidor');
     console.log('\n🔧 Conectando ao PostgreSQL...\n');
     
     await verificarBanco();

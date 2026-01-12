@@ -1,27 +1,34 @@
-# Sistema de Estoque e Vendas
+# 🏢 Sistema de Estoque e Vendas v2.0
 
-Sistema completo de gerenciamento de estoque, vendas e controle de ponto desenvolvido com Node.js, Express e **PostgreSQL**.
+[![Node.js](https://img.shields.io/badge/Node.js-16%2B-green)]()
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-blue)]()
+[![License](https://img.shields.io/badge/License-MIT-yellow)]()
 
-## 🚀 Funcionalidades
+**Sistema web completo para gerenciamento de estoque, vendas e ponto de presença em pequenas e médias empresas.**
 
-- **Autenticação JWT** - Sistema de login seguro com tokens
-- **Gestão de Produtos** - Cadastro completo com categorias, marcas e unidades
-- **Registro de Vendas** - Controle completo de vendas, clientes e pagamentos
-- **Controle de Estoque** - Entradas, saídas e ajustes automáticos
-- **Controle de Ponto** - Sistema de registro de entrada/saída
-- **Dashboard Interativo** - Estatísticas e gráficos em tempo real
-- **Níveis de Acesso** - Employee (1), Manager (2) e Admin (3)
-- **Alertas de Estoque** - Notificações de produtos com estoque baixo
-- **Auditoria Completa** - Histórico de todas as movimentações
-- **Fornecedores** - Gestão de fornecedores e ordens de compra
+## 🚀 Features
 
-## 📋 Pré-requisitos
+✅ **Gestão de Estoque** - CRUD com alertas e controle automático  
+✅ **Módulo de Vendas** - Registro com cálculo de lucro e margem  
+✅ **Controle de Ponto** - Entrada/saída com relatórios  
+✅ **Dashboard** - KPIs em tempo real com gráficos  
+✅ **Segurança** - Autenticação JWT, 3 níveis de acesso, validações rigorosas  
+✅ **Responsivo** - Desktop, Tablet e Mobile  
+✅ **Documentação Completa** - Briefing, Requisitos, Diagramas, Swagger  
 
-- **Node.js** >= 14.0.0
-- **PostgreSQL** >= 12.0
-- **npm** >= 6.0.0
+## 📋 Documentação Completa
 
-## 🔧 Instalação
+| Documento | Descrição |
+|-----------|-----------|
+| [📋 BRIEFING.md](docs/BRIEFING.md) | Escopo, objetivos, justificativa |
+| [📋 REQUISITOS.md](docs/REQUISITOS.md) | RF e RNF detalhados |
+| [📋 MAPA-DE-TELAS.md](docs/MAPA-DE-TELAS.md) | Wireframes de todas as telas |
+| [📋 ARQUITETURA.md](docs/ARQUITETURA.md) | Diagrama ER e arquitetura |
+| [📋 FIGMA-PROTOTIPO.md](docs/FIGMA-PROTOTIPO.md) | Guia de design |
+| [📋 SWAGGER-API.md](docs/SWAGGER-API.md) | Documentação OpenAPI completa |
+| [📋 SISTEMA-COMPLETO.md](docs/SISTEMA-COMPLETO.md) | Guia de uso e endpoints |
+
+## 🔧 Quickstart
 
 1. **Clone o repositório**
 ```bash
