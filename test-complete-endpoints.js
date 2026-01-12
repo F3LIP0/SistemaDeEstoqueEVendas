@@ -24,7 +24,7 @@ function log(msg, color = 'reset') {
 // Função para fazer requisições HTTP
 function request(method, path, data = null) {
     return new Promise((resolve, reject) => {
-        const url = new URL(path, BASE_URL);
+        const url = new URL(`${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`);
         const options = {
             method,
             headers: {
@@ -70,6 +70,8 @@ async function runTests() {
             log('✅ Login bem-sucedido', 'green');
         } else {
             log('❌ Erro no login', 'red');
+            log(`Status: ${res.status}`, 'yellow');
+            log(`Resposta: ${typeof res.body === 'string' ? res.body : JSON.stringify(res.body)}`, 'yellow');
             return;
         }
 
@@ -114,28 +116,26 @@ async function runTests() {
         }
 
         // 5. LISTAR PRODUTOS
-        log('\n5️⃣  Testando GET /api/productos', 'yellow');
-        res = await request('GET', '/productos?limit=10');
+        log('\n5️⃣  Testando GET /api/produtos', 'yellow');
+        res = await request('GET', '/produtos?limit=10');
         if (res.status === 200) {
-            log(`✅ Produtos listados: ${res.body.productos?.length || 0}`, 'green');
+            log(`✅ Produtos listados: ${res.body.produtos?.length || 0}`, 'green');
         } else {
             log(`❌ Erro ao listar produtos: ${res.status}`, 'red');
         }
 
         // 6. CRIAR PRODUTO
-        log('\n6️⃣  Testando POST /api/productos', 'yellow');
+        log('\n6️⃣  Testando POST /api/produtos', 'yellow');
         const newProduct = {
             sku: `TEST-${Date.now()}`,
             product_name: 'Produto Teste',
-            category_id: 1,
-            brand_id: 1,
             unit_id: 1,
             cost_price: 100,
             selling_price: 150,
             minimum_stock: 5,
             maximum_stock: 50
         };
-        res = await request('POST', '/productos', newProduct);
+        res = await request('POST', '/produtos', newProduct);
         let newProductId = null;
         if (res.status === 201) {
             newProductId = res.body.id;
@@ -146,8 +146,8 @@ async function runTests() {
 
         // 7. ATUALIZAR PRODUTO
         if (newProductId) {
-            log('\n7️⃣  Testando PUT /api/productos/:id', 'yellow');
-            res = await request('PUT', `/productos/${newProductId}`, {
+            log('\n7️⃣  Testando PUT /api/produtos/:id', 'yellow');
+            res = await request('PUT', `/produtos/${newProductId}`, {
                 product_name: 'Produto Teste Atualizado',
                 selling_price: 200
             });
@@ -205,8 +205,8 @@ async function runTests() {
 
         // 13. DELETAR PRODUTO
         if (newProductId) {
-            log('\n1️⃣3️⃣  Testando DELETE /api/productos/:id', 'yellow');
-            res = await request('DELETE', `/productos/${newProductId}`);
+            log('\n1️⃣3️⃣  Testando DELETE /api/produtos/:id', 'yellow');
+            res = await request('DELETE', `/produtos/${newProductId}`);
             if (res.status === 200) {
                 log('✅ Produto deletado com sucesso', 'green');
             } else {

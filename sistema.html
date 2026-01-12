@@ -952,7 +952,8 @@
             STORAGE_KEYS: {
                 TOKEN: 'token',
                 USUARIO: 'usuario'
-            }
+            },
+            DEBUG: false // Habilitar apenas em desenvolvimento para ver console.logs
         };
         
         let usuarioLogado = null;
@@ -1010,7 +1011,7 @@
                 inicializarDashboard();
                 
             } catch (erro) {
-                console.error('Erro no login:', erro);
+                if (CONFIG.DEBUG) console.error('Erro no login:', erro);
                 errorDiv.textContent = erro.message;
                 errorDiv.style.display = 'block';
             } finally {
@@ -1237,7 +1238,7 @@
                 `).join('');
                 
             } catch (erro) {
-                console.error('Erro ao carregar produtos:', erro);
+                if (CONFIG.DEBUG) console.error('Erro ao carregar produtos:', erro);
                 alert('Erro ao carregar produtos');
             }
         }
@@ -1312,7 +1313,7 @@
                 alert('Produto salvo com sucesso!');
                 
             } catch (erro) {
-                console.error('Erro ao salvar produto:', erro);
+                if (CONFIG.DEBUG) console.error('Erro ao salvar produto:', erro);
                 alert(erro.message);
             }
         }
@@ -1563,7 +1564,7 @@
                 carregarUsuarios();
                 
             } catch (erro) {
-                console.error('Erro ao criar usuário:', erro);
+                if (CONFIG.DEBUG) console.error('Erro ao criar usuário:', erro);
                 alert(erro.message);
             }
         }
@@ -1576,24 +1577,64 @@
          * Carrega movimentações de estoque
          */
         async function carregarMovimentacoes() {
-            console.log('Carregando movimentações...');
-            // TODO: Implementar quando endpoint estiver pronto
+            try {
+                const resposta = await fetch(`${CONFIG.API_URL}/movimentacoes?limit=50`, {
+                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                });
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar movimentações');
+                
+                const dados = await resposta.json();
+                const movimentacoes = dados.movimentacoes || dados;
+                
+                // Implementar visualização das movimentações
+                if (CONFIG.DEBUG) console.log('Movimentações carregadas:', movimentacoes.length);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar movimentações:', erro);
+            }
         }
         
         /**
          * Carrega registros de ponto
          */
         async function carregarPonto() {
-            console.log('Carregando registros de ponto...');
-            // TODO: Implementar quando endpoint estiver pronto
+            try {
+                const resposta = await fetch(`${CONFIG.API_URL}/ponto`, {
+                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                });
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar ponto');
+                
+                const dados = await resposta.json();
+                const registros = dados.registros || dados;
+                
+                if (CONFIG.DEBUG) console.log('Registros de ponto carregados:', registros.length);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar ponto:', erro);
+            }
         }
         
         /**
          * Carrega lista de usuários
          */
         async function carregarUsuarios() {
-            console.log('Carregando usuários...');
-            // TODO: Implementar quando endpoint estiver pronto
+            try {
+                const resposta = await fetch(`${CONFIG.API_URL}/usuarios`, {
+                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                });
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar usuários');
+                
+                const dados = await resposta.json();
+                const usuarios = dados.usuarios || dados;
+                
+                if (CONFIG.DEBUG) console.log('Usuários carregados:', usuarios.length);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar usuários:', erro);
+            }
         }
         
         /**
@@ -1628,7 +1669,7 @@
          * Executa quando a página carrega
          */
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('Sistema de Estoque e Vendas - Inicializado');
+            if (CONFIG.DEBUG) console.log('Sistema de Estoque e Vendas - Inicializado');
             
             // Verifica se usuário já está autenticado
             verificarAutenticacao();

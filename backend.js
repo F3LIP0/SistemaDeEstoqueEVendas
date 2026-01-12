@@ -101,6 +101,16 @@ async function query(text, params) {
 }
 
 /**
+ * Sanitiza input para prevenir XSS
+ */
+function sanitize(input) {
+    if (typeof input !== 'string') return input;
+    return input.trim()
+        .replace(/[<>]/g, '')
+        .substring(0, 500); // Limita a 500 caracteres
+}
+
+/**
  * Verifica se o banco está inicializado
  */
 async function verificarBanco() {
@@ -302,8 +312,6 @@ function autorizar(...niveis) {
  */
 app.post('/api/login', async (req, res) => {
     const { email, senha, username } = req.body;
-    
-    console.log('🔐 Tentativa de login:', { email: email || username, timestamp: new Date().toISOString() });
     
     // Validação básica
     if ((!email && !username) || !senha) {
@@ -546,6 +554,40 @@ app.post('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
         res.status(500).json({ 
             erro: 'Erro no servidor',
             mensagem: 'Erro ao criar usuário'
+        });
+    }
+});
+
+/**
+ * @route GET /api/usuarios
+ * @desc Lista usuários ativos
+ * @access Privado (Manager e Admin)
+ */
+app.get('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
+    try {
+        if (supabase) {
+            const { data, error } = await supabase
+                .from('users')
+                .select('user_id, username, full_name, email, phone, is_active')
+                .eq('is_active', true)
+                .order('full_name', { ascending: true });
+            if (error) throw error;
+            return res.json({ sucesso: true, total: data.length, usuarios: data });
+        }
+
+        const sql = `
+            SELECT user_id, username, full_name, email, phone, is_active
+            FROM users
+            WHERE is_active = true
+            ORDER BY full_name
+        `;
+        const result = await pool.query(sql);
+        res.json({ sucesso: true, total: result.rows.length, usuarios: result.rows });
+    } catch (error) {
+        console.error('Erro ao listar usuários:', error);
+        res.status(500).json({ 
+            erro: 'Erro no servidor',
+            mensagem: 'Erro ao listar usuários'
         });
     }
 });
@@ -915,8 +957,6 @@ app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
             if (category_id !== undefined) updates.category_id = category_id;
             if (brand_id !== undefined) updates.brand_id = brand_id;
             if (barcode !== undefined) updates.barcode = barcode;
-            updates.updated_by = req.usuario.id;
-            updates.updated_at = new Date().toISOString();
 
             const { data, error } = await supabase
                 .from('products')
@@ -925,11 +965,14 @@ app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
                 .select('product_id')
                 .single();
             
-            if (error) throw error;
+            if (error) {
+                console.error('Erro Supabase PUT produtos:', error);
+                throw error;
+            }
             return res.json({ sucesso: true, mensagem: 'Produto atualizado com sucesso', id: data.product_id });
         }
 
-        // Fallback Postgres
+        // Fallback Postgres - remover updated_by e updated_at se não existirem nas colunas
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -945,10 +988,7 @@ app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
         if (brand_id !== undefined) { updates.push(`brand_id = $${paramCount++}`); values.push(brand_id); }
         if (barcode !== undefined) { updates.push(`barcode = $${paramCount++}`); values.push(barcode); }
         
-        updates.push(`updated_by = $${paramCount++}`);
-        values.push(req.usuario.id);
-        updates.push(`updated_at = $${paramCount++}`);
-        values.push(new Date().toISOString());
+        // Não adicionar updated_by e updated_at - coluna pode não existir
         
         values.push(productId);
 
@@ -1004,7 +1044,7 @@ app.delete('/api/produtos/:id', autenticar, autorizar(3), async (req, res) => {
             // Soft-delete: marcar como inativo
             const { data, error } = await supabase
                 .from('products')
-                .update({ is_active: false, updated_by: req.usuario.id, updated_at: new Date().toISOString() })
+                .update({ is_active: false })
                 .eq('product_id', productId)
                 .select('product_id')
                 .single();
@@ -1013,14 +1053,14 @@ app.delete('/api/produtos/:id', autenticar, autorizar(3), async (req, res) => {
             return res.json({ sucesso: true, mensagem: 'Produto deletado com sucesso', id: data.product_id });
         }
 
-        // Fallback Postgres
+        // Fallback Postgres - sem colunas updated_* para compatibilidade
         const updateQuery = `
             UPDATE products
-            SET is_active = false, updated_by = $1, updated_at = $2
-            WHERE product_id = $3
+            SET is_active = false
+            WHERE product_id = $1
             RETURNING product_id
         `;
-        const result = await pool.query(updateQuery, [req.usuario.id, new Date().toISOString(), productId]);
+        const result = await pool.query(updateQuery, [productId]);
         
         if (result.rows.length === 0) {
             return res.status(404).json({ erro: 'Produto não encontrado', mensagem: 'ID do produto não existe' });
@@ -1481,8 +1521,8 @@ app.listen(CONFIG.PORT, async () => {
     console.log('   DELETE /api/usuarios/:id             - Deletar usuário (Admin)');
     console.log('   GET    /api/produtos                 - Listar produtos (Todos)');
     console.log('   POST   /api/produtos                 - Criar produto (Manager/Admin)');
-    console.log('   PUT    /api/productos/:id            - Atualizar produto (Manager/Admin)');
-    console.log('   DELETE /api/productos/:id            - Deletar produto (Admin)');
+    console.log('   PUT    /api/produtos/:id             - Atualizar produto (Manager/Admin)');
+    console.log('   DELETE /api/produtos/:id             - Deletar produto (Admin)');
     console.log('   GET    /api/vendas                   - Listar vendas (Autenticado)');
     console.log('   GET    /api/dashboard/estatisticas   - Estatísticas (Autenticado)');
     console.log('   GET    /api/ponto                    - Controle de ponto (Autenticado)');
