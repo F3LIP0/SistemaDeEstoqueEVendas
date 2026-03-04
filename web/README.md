@@ -33,7 +33,7 @@
 1. **Clone o repositório**
 ```bash
 git clone https://github.com/F3LIP0/SistemaDeEstoqueEVendas.git
-cd SistemaDeEstoqueEVendas
+cd SistemaDeEstoqueEVendas/web
 ```
 
 2. **Instale as dependências**
@@ -79,19 +79,30 @@ npm install
        SUPABASE_SERVICE_ROLE_KEY=SUA_CHAVE_SERVICE_ROLE
        ```
 
-4. **Inicie o servidor**
+4. **Inicie o backend (API)**
 ```bash
 npm start
 ```
 
-Para desenvolvimento com auto-reload:
+Opcional: iniciar frontend com proxy `/api -> http://localhost:3000`:
+```bash
+npm run start:frontend
+```
+
+Opcional: iniciar backend + frontend juntos:
+```bash
+npm run start:all
+```
+
+Para desenvolvimento com auto-reload (backend):
 ```bash
 npm run dev
 ```
 
 5. **Abra o sistema no navegador**
    - Backend API: `http://localhost:3000`
-   - Frontend: Abra o arquivo `sistema.html` no navegador
+   - Frontend (via backend): `http://localhost:3000`
+   - Frontend (via proxy): `http://localhost:8080`
 
 ## 🔐 Credenciais Padrão
 
@@ -105,11 +116,13 @@ npm run dev
 
 ```
 SistemaDeEstoqueEVendas/
-├── backend.js          # API REST em Node.js com PostgreSQL
-├── sistema.html        # Interface do usuário
-├── package.json        # Dependências do projeto
-├── .gitignore         # Arquivos ignorados pelo Git
-└── README.md          # Este arquivo
+├── web/
+│   ├── backend.js         # API REST em Node.js com PostgreSQL
+│   ├── frontend-server.js # Servidor frontend com proxy /api
+│   ├── sistema.html       # Interface do usuário
+│   ├── package.json       # Dependências e scripts
+│   └── README.md          # Este arquivo
+└── android/               # App mobile React Native
 ```
 
 ## 🗄️ Estrutura do Banco de Dados PostgreSQL

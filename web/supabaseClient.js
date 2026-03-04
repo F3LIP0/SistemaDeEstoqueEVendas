@@ -8,7 +8,7 @@ let supabase = null;
 if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
   supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
-    global: { headers: { 'X-Client-Info': 'SistemaDeEstoqueEVendas/2.0.0' } },
+    global: { headers: { 'X-Client-Info': 'Fluxa/2.0.0' } },
   });
 }
 

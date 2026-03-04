@@ -5,6 +5,9 @@
   "main": "backend.js",
   "scripts": {
     "start": "node backend.js",
+    "start:backend": "node backend.js",
+    "start:frontend": "node frontend-server.js",
+    "start:all": "sh -c 'node backend.js & node frontend-server.js'",
     "dev": "nodemon backend.js",
     "test": "node test-complete-endpoints.js",
     "create-admin": "node create-admin.js"
