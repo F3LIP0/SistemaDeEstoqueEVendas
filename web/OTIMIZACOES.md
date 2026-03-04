@@ -1,4 +1,4 @@
-# 🚀 OTIMIZAÇÕES REALIZADAS - Sistema de Estoque e Vendas
+# 🚀 OTIMIZAÇÕES REALIZADAS - Fluxa
 
 **Data:** 12 de Janeiro de 2026  
 **Branch:** bomba  

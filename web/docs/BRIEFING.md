@@ -1,4 +1,4 @@
-# 📋 BRIEFING - SISTEMA DE ESTOQUE E VENDAS
+# 📋 BRIEFING - FLUXA
 
 ## 1. Identificação do Projeto
 

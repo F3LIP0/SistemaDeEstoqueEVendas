@@ -1,4 +1,4 @@
-# 🏢 Sistema de Estoque e Vendas v2.0
+# 🏢 Fluxa v2.0
 
 [![Node.js](https://img.shields.io/badge/Node.js-16%2B-green)]()
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-blue)]()

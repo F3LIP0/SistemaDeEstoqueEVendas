@@ -1,7 +1,7 @@
 {
-  "name": "sistema-estoque-vendas",
+  "name": "fluxa-web",
   "version": "2.0.0",
-  "description": "Sistema completo de gerenciamento de estoque, vendas e controle de ponto com PostgreSQL",
+  "description": "Fluxa web: gerenciamento de estoque, vendas e controle operacional com PostgreSQL",
   "main": "backend.js",
   "scripts": {
     "start": "node backend.js",

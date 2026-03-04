@@ -1,5 +1,5 @@
 -- ============================================
--- SISTEMA DE ESTOQUE E VENDAS - SCHEMA POSTGRESQL
+-- FLUXA - SCHEMA POSTGRESQL
 -- Para Supabase
 -- ============================================
 

@@ -18,7 +18,7 @@ async function req(method, endpoint, body, token) {
 
 async function main() {
     console.log('\n' + '='.repeat(70));
-    console.log('🚀 TESTE DE FLUXO COMPLETO - Sistema de Estoque e Vendas');
+    console.log('🚀 TESTE DE FLUXO COMPLETO - Fluxa');
     console.log('='.repeat(70) + '\n');
     
     try {

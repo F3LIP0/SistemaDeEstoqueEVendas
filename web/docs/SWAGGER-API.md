@@ -8,7 +8,7 @@ Salve como `docs/openapi.yaml`:
 openapi: 3.0.0
 
 info:
-  title: Sistema de Estoque e Vendas API
+  title: Fluxa API
   description: |
     API RESTful para gerenciamento de estoque, vendas e ponto de presença.
     
