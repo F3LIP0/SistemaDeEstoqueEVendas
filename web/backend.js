@@ -1,5 +1,5 @@
 /**
- * Fluxa - Backend API
+ * fluxa - Backend API
  * 
  * @description API RESTful para gerenciamento de estoque, vendas e controle de ponto
  * @version 2.0.0
@@ -51,6 +51,7 @@ app.options('*', cors(corsOptions)); // Preflight para todas as rotas
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname, { index: false }));
 
 // Servir o frontend diretamente pelo backend (evita problemas de CORS/ports)
 app.get('/', (req, res) => {
@@ -183,9 +184,7 @@ async function criarUsuarioAdmin() {
             VALUES ($1, $2, $3, $4, $5, $6, $7)
         `, ['admin', 'admin@empresa.com', senhaHash, adminRoleId, 'Administrador do Sistema', '0000000000', true]);
         
-        console.log('👤 Usuário admin criado com sucesso');
-        console.log('📧 Email: admin@empresa.com');
-        console.log('🔑 Senha: admin123');
+        console.log('👤 Usuário admin criado com sucesso (use a senha padrão para o primeiro acesso)');
         
     } catch (error) {
         console.error('❌ Erro ao criar usuário admin:', error.message);
@@ -340,6 +339,17 @@ function isMissingTableError(error, tableName) {
     return false;
 }
 
+function isMissingColumnError(error, columnName) {
+    if (!error) return false;
+    const code = String(error.code || '');
+    const message = String(error.message || '').toLowerCase();
+    const column = String(columnName || '').toLowerCase();
+    if (code === '42703' || code === 'PGRST204') return true;
+    if (message.includes('column') && message.includes(column) && message.includes('does not exist')) return true;
+    if (message.includes('could not find the') && message.includes(column) && message.includes('column')) return true;
+    return false;
+}
+
 // ============================================
 // ROTAS DA API
 // ============================================
@@ -415,6 +425,7 @@ app.post('/api/login', async (req, res) => {
                     username: usuario.username,
                     nome: usuario.full_name,
                     email: usuario.email,
+                    avatar_url: usuario.avatar_url || null,
                     role_name: role.role_name,
                     role_level: role.role_level
                 }
@@ -475,6 +486,7 @@ app.post('/api/login', async (req, res) => {
                 username: usuario.username,
                 nome: usuario.full_name,
                 email: usuario.email,
+                avatar_url: usuario.avatar_url || null,
                 role_name: usuario.role_name,
                 role_level: usuario.role_level
             }
@@ -495,7 +507,7 @@ app.post('/api/login', async (req, res) => {
  * @access Privado (Manager e Admin)
  */
 app.post('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
-    const { username, email, senha, full_name, phone, role_name } = req.body;
+    const { username, email, senha, full_name, phone, role_name, avatar_url } = req.body;
     
     // Validações
     if (!username || !email || !senha || !full_name) {
@@ -544,6 +556,7 @@ app.post('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
                     role_id,
                     full_name,
                     phone: phone || null,
+                    avatar_url: avatar_url || null,
                     created_by: req.usuario.id
                 })
                 .select('user_id')
@@ -572,8 +585,8 @@ app.post('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
         const role_id = roleResult.rows[0].role_id;
         const senhaHash = await bcrypt.hash(senha, CONFIG.SALT_ROUNDS);
         const insertQuery = `
-            INSERT INTO users (username, email, password_hash, role_id, full_name, phone, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO users (username, email, password_hash, role_id, full_name, phone, avatar_url, created_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING user_id
         `;
         const result = await pool.query(insertQuery, [
@@ -583,6 +596,7 @@ app.post('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
             role_id,
             full_name,
             phone || null,
+            avatar_url || null,
             req.usuario.id
         ]);
         await registrarAtividade({
@@ -622,7 +636,7 @@ app.get('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
         if (supabase) {
             let query = supabase
                 .from('users')
-                .select('user_id, username, full_name, email, phone, is_active, role_id, created_at, last_login')
+                .select('user_id, username, full_name, email, phone, avatar_url, is_active, role_id, created_at, last_login')
                 .order('full_name', { ascending: true });
             if (!incluirInativos) {
                 query = query.eq('is_active', true);
@@ -646,7 +660,7 @@ app.get('/api/usuarios', autenticar, autorizar(2, 3), async (req, res) => {
         }
 
         let sql = `
-            SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.is_active,
+            SELECT u.user_id, u.username, u.full_name, u.email, u.phone, u.avatar_url, u.is_active,
                    u.created_at, u.last_login, r.role_name, r.role_level
             FROM users u
             JOIN roles r ON u.role_id = r.role_id
@@ -1072,42 +1086,59 @@ app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
             }
 
             // Preparar dados para atualização
-            const updates = {};
-            if (product_name !== undefined) updates.product_name = product_name;
-            if (description !== undefined) updates.description = description;
-            if (cost_price !== undefined) updates.cost_price = cost_price;
-            if (selling_price !== undefined) updates.selling_price = selling_price;
-            if (minimum_stock !== undefined) updates.minimum_stock = minimum_stock;
-            if (maximum_stock !== undefined) updates.maximum_stock = maximum_stock;
-            if (current_stock !== undefined) updates.current_stock = current_stock;
-            if (category_id !== undefined) updates.category_id = category_id;
-            if (brand_id !== undefined) updates.brand_id = brand_id;
-            if (barcode !== undefined) updates.barcode = barcode;
-            updates.updated_by = req.usuario.id;
+            const updatesBase = {};
+            if (product_name !== undefined) updatesBase.product_name = product_name;
+            if (description !== undefined) updatesBase.description = description;
+            if (cost_price !== undefined) updatesBase.cost_price = cost_price;
+            if (selling_price !== undefined) updatesBase.selling_price = selling_price;
+            if (minimum_stock !== undefined) updatesBase.minimum_stock = minimum_stock;
+            if (maximum_stock !== undefined) updatesBase.maximum_stock = maximum_stock;
+            if (current_stock !== undefined) updatesBase.current_stock = current_stock;
+            if (category_id !== undefined) updatesBase.category_id = category_id;
+            if (brand_id !== undefined) updatesBase.brand_id = brand_id;
+            if (barcode !== undefined) updatesBase.barcode = barcode;
 
-            const { data, error } = await supabase
+            if (Object.keys(updatesBase).length === 0) {
+                return res.status(400).json({
+                    erro: 'Dados incompletos',
+                    mensagem: 'Informe ao menos um campo para atualizar o produto'
+                });
+            }
+
+            let updatesAplicados = { ...updatesBase, updated_by: req.usuario.id };
+            let { data, error } = await supabase
                 .from('products')
-                .update(updates)
+                .update(updatesAplicados)
                 .eq('product_id', productId)
                 .select('product_id')
                 .single();
-            
-            if (error) {
-                console.error('Erro Supabase PUT produtos:', error);
-                throw error;
+
+            if (error && isMissingColumnError(error, 'updated_by')) {
+                // Compatibilidade com schemas onde products não possui updated_by.
+                updatesAplicados = { ...updatesBase };
+                const retry = await supabase
+                    .from('products')
+                    .update(updatesAplicados)
+                    .eq('product_id', productId)
+                    .select('product_id')
+                    .single();
+                data = retry.data;
+                error = retry.error;
             }
+
+            if (error) throw error;
             await registrarAtividade({
                 req,
                 action: 'UPDATE',
                 resourceType: 'product',
                 resourceId: data.product_id,
                 oldValues: atual[0] || null,
-                newValues: updates
+                newValues: updatesAplicados
             });
             return res.json({ sucesso: true, mensagem: 'Produto atualizado com sucesso', id: data.product_id });
         }
 
-        // Fallback Postgres - remover updated_by e updated_at se não existirem nas colunas
+        // Fallback Postgres - compatibilidade com schemas sem coluna updated_by
         const updates = [];
         const values = [];
         let paramCount = 1;
@@ -1123,6 +1154,16 @@ app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
         if (brand_id !== undefined) { updates.push(`brand_id = $${paramCount++}`); values.push(brand_id); }
         if (barcode !== undefined) { updates.push(`barcode = $${paramCount++}`); values.push(barcode); }
         
+        if (updates.length === 0) {
+            return res.status(400).json({
+                erro: 'Dados incompletos',
+                mensagem: 'Informe ao menos um campo para atualizar o produto'
+            });
+        }
+
+        const updatesSemAuditoria = [...updates];
+        const valuesSemAuditoria = [...values];
+
         updates.push(`updated_by = $${paramCount++}`); values.push(req.usuario.id);
         
         values.push(productId);
@@ -1134,7 +1175,21 @@ app.put('/api/produtos/:id', autenticar, autorizar(2, 3), async (req, res) => {
             RETURNING product_id
         `;
 
-        const result = await pool.query(updateQuery, values);
+        let result;
+        try {
+            result = await pool.query(updateQuery, values);
+        } catch (error) {
+            if (!isMissingColumnError(error, 'updated_by')) throw error;
+
+            const paramSemAuditoria = valuesSemAuditoria.length + 1;
+            const querySemAuditoria = `
+                UPDATE products
+                SET ${updatesSemAuditoria.join(', ')}
+                WHERE product_id = $${paramSemAuditoria}
+                RETURNING product_id
+            `;
+            result = await pool.query(querySemAuditoria, [...valuesSemAuditoria, productId]);
+        }
         if (result.rows.length === 0) {
             return res.status(404).json({ erro: 'Produto não encontrado', mensagem: 'ID do produto não existe' });
         }
@@ -1682,12 +1737,26 @@ app.put('/api/configuracoes', autenticar, autorizar(3), async (req, res) => {
  */
 app.put('/api/usuarios/:id', autenticar, autorizar(3), async (req, res) => {
     const userId = req.params.id;
-    const { full_name, email, username, phone, role_name } = req.body;
+    const { full_name, email, username, phone, role_name, avatar_url, is_active, senha } = req.body;
 
     if (!userId) {
         return res.status(400).json({ 
             erro: 'ID inválido',
             mensagem: 'ID do usuário é obrigatório'
+        });
+    }
+
+    if (is_active !== undefined && typeof is_active !== 'boolean') {
+        return res.status(400).json({
+            erro: 'Valor inválido',
+            mensagem: 'Campo is_active deve ser booleano'
+        });
+    }
+
+    if (senha !== undefined && senha !== null && String(senha).trim() !== '' && String(senha).length < 6) {
+        return res.status(400).json({
+            erro: 'Senha inválida',
+            mensagem: 'A nova senha deve ter no mínimo 6 caracteres'
         });
     }
 
@@ -1719,6 +1788,11 @@ app.put('/api/usuarios/:id', autenticar, autorizar(3), async (req, res) => {
             if (email !== undefined) updates.email = email;
             if (username !== undefined) updates.username = username;
             if (phone !== undefined) updates.phone = phone;
+            if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+            if (is_active !== undefined) updates.is_active = is_active;
+            if (senha !== undefined && senha !== null && String(senha).trim() !== '') {
+                updates.password_hash = await bcrypt.hash(String(senha), CONFIG.SALT_ROUNDS);
+            }
             if (role_name !== undefined) {
                 const { data: roles } = await supabase.from('roles').select('role_id').eq('role_name', role_name).limit(1);
                 if (!roles || roles.length === 0) {
@@ -1757,6 +1831,13 @@ app.put('/api/usuarios/:id', autenticar, autorizar(3), async (req, res) => {
         if (email !== undefined) { updates.push(`email = $${paramCount++}`); values.push(email); }
         if (username !== undefined) { updates.push(`username = $${paramCount++}`); values.push(username); }
         if (phone !== undefined) { updates.push(`phone = $${paramCount++}`); values.push(phone); }
+        if (avatar_url !== undefined) { updates.push(`avatar_url = $${paramCount++}`); values.push(avatar_url); }
+        if (is_active !== undefined) { updates.push(`is_active = $${paramCount++}`); values.push(is_active); }
+        if (senha !== undefined && senha !== null && String(senha).trim() !== '') {
+            const senhaHash = await bcrypt.hash(String(senha), CONFIG.SALT_ROUNDS);
+            updates.push(`password_hash = $${paramCount++}`);
+            values.push(senhaHash);
+        }
         if (role_name !== undefined) {
             const roleResult = await pool.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
             if (roleResult.rows.length === 0) {
@@ -2277,11 +2358,6 @@ app.get('/api/vendas', autenticar, async (req, res) => {
  * @access Privado (Employee vê apenas os próprios)
  */
 app.get('/api/ponto', autenticar, async (req, res) => {
-    return res.status(410).json({
-        erro: 'Módulo desativado',
-        mensagem: 'Controle de ponto foi removido deste sistema'
-    });
-    
     const data = req.query.data || new Date().toISOString().split('T')[0];
     
     try {
@@ -2343,6 +2419,9 @@ app.get('/api/ponto', autenticar, async (req, res) => {
         res.json({ sucesso: true, total: result.rows.length, registros: result.rows });
         
     } catch (error) {
+        if (isMissingTableError(error, 'time_records')) {
+            return res.json({ sucesso: true, total: 0, registros: [] });
+        }
         console.error('Erro ao buscar ponto:', error);
         res.status(500).json({ 
             erro: 'Erro no servidor',
@@ -2357,11 +2436,6 @@ app.get('/api/ponto', autenticar, async (req, res) => {
  * @access Privado (Autenticado)
  */
 app.post('/api/ponto', autenticar, async (req, res) => {
-    return res.status(410).json({
-        erro: 'Módulo desativado',
-        mensagem: 'Controle de ponto foi removido deste sistema'
-    });
-    
     const userId = req.usuario.id;
     const tipo = req.body.tipo; // 'entrada' ou 'saida'
     
@@ -2490,6 +2564,12 @@ app.post('/api/ponto', autenticar, async (req, res) => {
             });
         }
     } catch (error) {
+        if (isMissingTableError(error, 'time_records')) {
+            return res.status(503).json({
+                erro: 'Recurso indisponível',
+                mensagem: 'Tabela de ponto não está configurada no banco'
+            });
+        }
         console.error('Erro ao registrar ponto:', error);
         res.status(500).json({
             erro: 'Erro no servidor',
