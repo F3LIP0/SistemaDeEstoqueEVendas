@@ -49,6 +49,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Preflight para todas as rotas
 
+// Headers de segurança HTTP
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname, { index: false }));
@@ -831,7 +840,7 @@ app.get('/api/dashboard/estatisticas', autenticar, async (req, res) => {
  * @desc Lista todos os produtos ativos
  * @access Público
  */
-app.get('/api/produtos', async (req, res) => {
+app.get('/api/produtos', autenticar, async (req, res) => {
     const { categoria, busca } = req.query;
     
     try {
