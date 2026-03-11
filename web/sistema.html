@@ -1829,7 +1829,7 @@
                 try {
                     criarGraficoVendas(dados.grafico);
                 } catch (erroGrafico) {
-                    console.error('Erro ao renderizar gráfico:', erroGrafico);
+                    if (CONFIG.DEBUG) console.error('Erro ao renderizar gráfico:', erroGrafico);
                 }
 
                  // Tabelas do dashboard
@@ -1837,8 +1837,8 @@
                  carregarBaixoEstoque(dados.baixo_estoque);
                 
             } catch (erro) {
-                 console.error('Erro ao carregar dashboard:', erro);
-                 mostrarErro('Erro ao carregar estatísticas');
+                if (CONFIG.DEBUG) console.error('Erro ao carregar dashboard:', erro);
+                mostrarErro('Erro ao carregar estatísticas');
             }
         }
         
@@ -2034,6 +2034,7 @@
                 }
                 
                 const podeGerir = usuarioLogado && usuarioLogado.role_level >= 2;
+                const podeExcluirProduto = usuarioLogado && usuarioLogado.role_level >= 3;
                 tbody.innerHTML = produtos.map(prod => `
                     <tr>
                         <td><strong>${prod.sku}</strong></td>
@@ -2057,6 +2058,13 @@
                                         style="padding: 8px 12px; font-size: 12px; background: #f56565; color: white; margin-left: 6px;">
                                     <i class="fas fa-minus-circle"></i>
                                 </button>
+                                ${podeExcluirProduto ? `
+                                <button onclick="deletarProduto(${prod.product_id})"
+                                        class="btn"
+                                        style="padding: 8px 12px; font-size: 12px; background: #e53e3e; color: white; margin-left: 6px;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                ` : ''}
                             ` : '<span style="color: #a0aec0;">-</span>'}
                         </td>
                     </tr>
@@ -2179,6 +2187,24 @@
 
             abrirModal('modalProduto');
         }
+
+        async function deletarProduto(id) {
+            confirmarAcao('Deseja excluir este produto? Esta ação não pode ser desfeita.', async () => {
+                try {
+                    const resposta = await fetch(`${CONFIG.API_URL}/produtos/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                    });
+                    const dados = await resposta.json();
+                    if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao excluir produto');
+                    mostrarNotificacao('Produto excluído com sucesso!', 'success');
+                    carregarProdutos();
+                } catch (erro) {
+                    if (CONFIG.DEBUG) console.error('Erro ao excluir produto:', erro);
+                    mostrarErro(erro.message || 'Erro ao excluir produto');
+                }
+            });
+        }
         
         // ============================================
         // FUNÇÕES DE VENDAS
@@ -2205,7 +2231,8 @@
                 atualizarUltimasVendas(vendas.slice(0, 5));
                 
             } catch (erro) {
-                console.error('Erro ao carregar vendas:', erro);
+                if (CONFIG.DEBUG) console.error('Erro ao carregar vendas:', erro);
+                mostrarErro('Erro ao carregar vendas');
             }
         }
         
@@ -2307,6 +2334,9 @@
             if (navItemAtivo) navItemAtivo.classList.add('active');
             
             // Carrega dados específicos da página
+            if (pagina === 'dashboard') carregarDashboard();
+            if (pagina === 'produtos') carregarProdutos();
+            if (pagina === 'vendas') carregarVendas();
             if (pagina === 'estoque') carregarDadosEstoque();
             if (pagina === 'ponto') carregarPonto();
             if (pagina === 'cadastros') carregarCadastros();
@@ -2595,7 +2625,7 @@
                     mostrarNotificacao('Usuário excluído com sucesso!', 'success');
                     carregarUsuarios();
                 } catch (erro) {
-                    console.error('Erro ao excluir usuário:', erro);
+                    if (CONFIG.DEBUG) console.error('Erro ao excluir usuário:', erro);
                     mostrarErro(erro.message || 'Erro ao excluir usuário');
                 }
             });
@@ -3224,7 +3254,7 @@
                 }).join('');
                 
             } catch (erro) {
-                console.error('Erro ao carregar usuários:', erro);
+                if (CONFIG.DEBUG) console.error('Erro ao carregar usuários:', erro);
                 mostrarErro(erro.message || 'Erro ao carregar usuários');
             }
         }
