@@ -7,11 +7,11 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, EmptyState, Input } from '../components';
 import { ApiError, apiRequest } from '../services/api';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { UI } from '../theme/ui';
@@ -259,10 +259,9 @@ export function VendasScreen() {
         contentContainerStyle={{ padding: 12, gap: 8 }}
         ListHeaderComponent={
           canCreate ? (
-            <View style={styles.formCard}>
+            <Card style={styles.formCard}>
               <Text style={styles.formTitle}>Nova venda</Text>
-              <TextInput
-                style={styles.input}
+              <Input
                 value={customerQuery}
                 onChangeText={setCustomerQuery}
                 placeholder="Buscar cliente por nome ou ID"
@@ -292,8 +291,7 @@ export function VendasScreen() {
                 </View>
               ) : null}
 
-              <TextInput
-                style={styles.input}
+              <Input
                 value={productQuery}
                 onChangeText={setProductQuery}
                 placeholder="Buscar produto por nome ou ID"
@@ -329,16 +327,14 @@ export function VendasScreen() {
                 </View>
               ) : null}
 
-              <TextInput
-                style={styles.input}
+              <Input
+                type="number"
                 value={quantity}
                 onChangeText={setQuantity}
                 placeholder="Quantidade"
                 keyboardType="numeric"
               />
-              <Pressable style={[styles.button, styles.secondaryButton]} onPress={addSaleItem}>
-                <Text style={styles.secondaryButtonText}>Adicionar item</Text>
-              </Pressable>
+              <Button variant="secondary" label="Adicionar item" onPress={addSaleItem} />
 
               {saleItems.length > 0 ? (
                 <View style={styles.itemsBox}>
@@ -361,36 +357,32 @@ export function VendasScreen() {
                 <Text style={styles.hint}>Nenhum item adicionado</Text>
               )}
 
-              <TextInput style={styles.input} value={paymentMethod} onChangeText={setPaymentMethod} placeholder="Forma de pagamento" />
-              <TextInput style={styles.input} value={notes} onChangeText={setNotes} placeholder="Observações" />
+              <Input style={styles.input} value={paymentMethod} onChangeText={setPaymentMethod} placeholder="Forma de pagamento" />
+              <Input style={styles.input} value={notes} onChangeText={setNotes} placeholder="Observações" />
 
-              <Pressable style={[styles.button, styles.saveButton]} onPress={createSale} disabled={submitting}>
-                <Text style={styles.buttonText}>{submitting ? 'Salvando...' : 'Criar venda'}</Text>
-              </Pressable>
+              <Button label="Criar venda" onPress={createSale} loading={submitting} />
 
-              <TextInput
-                style={styles.input}
+              <Input
                 value={salesQuery}
                 onChangeText={setSalesQuery}
                 placeholder="Buscar vendas por número/cliente"
               />
               <Text style={styles.hint}>Resumo: {filteredSales.length} venda(s) • Total R$ {salesTotal.toFixed(2)}</Text>
-            </View>
+            </Card>
           ) : (
-            <View style={styles.formCard}>
+            <Card style={styles.formCard}>
               <Text style={styles.hint}>Seu perfil possui apenas leitura de vendas.</Text>
-              <TextInput
-                style={styles.input}
+              <Input
                 value={salesQuery}
                 onChangeText={setSalesQuery}
                 placeholder="Buscar vendas por número/cliente"
               />
               <Text style={styles.hint}>Resumo: {filteredSales.length} venda(s) • Total R$ {salesTotal.toFixed(2)}</Text>
-            </View>
+            </Card>
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.name}>Venda {item.order_number || `#${item.order_id}`}</Text>
             <Text>Total: R$ {Number(item.total_amount || 0).toFixed(2)}</Text>
             <Text style={[styles.statusText, item.payment_status === 'PAID' ? styles.statusOk : styles.statusWarn]}>
@@ -401,9 +393,15 @@ export function VendasScreen() {
             </Text>
             <Text>Cliente: {item.customer_name || 'N/A'}</Text>
             <Text>Data: {item.order_date ? new Date(item.order_date).toLocaleString('pt-BR') : '-'}</Text>
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>{refreshing ? 'Carregando vendas...' : 'Nenhuma venda encontrada.'}</Text>}
+        ListEmptyComponent={
+          <EmptyState
+            title="Sem vendas"
+            message={refreshing ? 'Carregando vendas...' : 'Nenhuma venda encontrada com os filtros atuais.'}
+            type="empty"
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -421,16 +419,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: UI.radius.sm,
-    alignItems: 'center',
-  },
-  saveButton: { backgroundColor: UI.colors.primary },
-  secondaryButton: { backgroundColor: UI.colors.chipBg },
-  buttonText: { color: UI.colors.white, fontWeight: '600' },
-  secondaryButtonText: { color: UI.colors.textPrimary, fontWeight: '600' },
   hint: { fontSize: 12, color: UI.colors.textMuted },
   selectedText: { fontSize: 12, color: UI.colors.textSecondary, fontWeight: '600' },
   optionsBox: {
@@ -461,11 +449,10 @@ const styles = StyleSheet.create({
   saleItemSubText: { fontSize: 12, color: UI.colors.textMuted },
   removeItemButton: { backgroundColor: UI.colors.dangerBg, borderRadius: UI.radius.xs, paddingHorizontal: 10, paddingVertical: 6 },
   removeItemText: { color: UI.colors.dangerText, fontSize: 12, fontWeight: '600' },
-  card: { backgroundColor: UI.colors.card, borderRadius: UI.radius.md, padding: 12 },
+  card: { padding: 12 },
   name: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   statusText: { fontWeight: '700', marginTop: 2 },
   statusOk: { color: UI.colors.success },
   statusWarn: { color: UI.colors.warningText },
   statusCritical: { color: UI.colors.dangerText },
-  empty: { textAlign: 'center', marginTop: 20, color: UI.colors.textMuted },
 });

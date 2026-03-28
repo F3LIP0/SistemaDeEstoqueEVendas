@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, EmptyState, Input } from '../components';
 import { apiRequest } from '../services/api';
 import { UI } from '../theme/ui';
 
@@ -104,9 +105,7 @@ export function ConfiguracoesScreen() {
   if (!isAdmin) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.blockedBox}>
-          <Text style={styles.blockedText}>Acesso restrito a administradores.</Text>
-        </View>
+        <EmptyState title="Acesso restrito" message="Apenas administradores podem alterar configurações." type="no-permission" />
       </SafeAreaView>
     );
   }
@@ -117,30 +116,28 @@ export function ConfiguracoesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.card}>
+        <Card style={styles.card}>
           <Text style={styles.title}>Configurações Globais</Text>
-          <TextInput style={styles.input} value={empresaNome} onChangeText={setEmpresaNome} placeholder="Nome da empresa" />
-          <TextInput style={styles.input} value={moeda} onChangeText={setMoeda} placeholder="Moeda" autoCapitalize="characters" />
-          <TextInput
-            style={styles.input}
+          <Input style={styles.input} value={empresaNome} onChangeText={setEmpresaNome} placeholder="Nome da empresa" />
+          <Input style={styles.input} value={moeda} onChangeText={setMoeda} placeholder="Moeda" autoCapitalize="characters" />
+          <Input
+            type="number"
             value={impostoPadrao}
             onChangeText={setImpostoPadrao}
             placeholder="Imposto padrão (%)"
             keyboardType="numeric"
           />
-          <TextInput
-            style={styles.input}
+          <Input
+            type="number"
             value={estoqueMinimoPadrao}
             onChangeText={setEstoqueMinimoPadrao}
             placeholder="Estoque mínimo padrão"
             keyboardType="numeric"
           />
-          <TextInput style={styles.input} value={logoUrl} onChangeText={setLogoUrl} placeholder="URL do logo" autoCapitalize="none" />
+          <Input style={styles.input} value={logoUrl} onChangeText={setLogoUrl} placeholder="URL do logo" autoCapitalize="none" />
 
-          <Pressable style={[styles.button, styles.saveButton]} onPress={save} disabled={saving}>
-            <Text style={styles.buttonText}>{saving ? 'Salvando...' : 'Salvar configurações'}</Text>
-          </Pressable>
-        </View>
+          <Button label="Salvar configurações" onPress={save} loading={saving} />
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -149,7 +146,7 @@ export function ConfiguracoesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI.colors.background },
   content: { padding: 12 },
-  card: { backgroundColor: UI.colors.card, borderRadius: UI.radius.md, padding: 12, gap: 8 },
+  card: { padding: 12, gap: 8 },
   title: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
   input: {
     borderWidth: 1,
@@ -158,19 +155,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  button: {
-    paddingVertical: 10,
-    borderRadius: UI.radius.sm,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButton: { backgroundColor: UI.colors.primary },
-  buttonText: { color: UI.colors.white, fontWeight: '600' },
-  blockedBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  blockedText: { color: UI.colors.textMuted, textAlign: 'center' },
 });

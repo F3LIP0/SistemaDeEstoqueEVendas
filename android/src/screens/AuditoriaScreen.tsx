@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { Card, EmptyState, Input } from '../components';
 import { ApiError, apiRequest } from '../services/api';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { UI } from '../theme/ui';
@@ -74,9 +75,7 @@ export function AuditoriaScreen() {
   if (!isAdmin) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.emptyWrap}>
-          <Text style={styles.info}>Acesso restrito a administradores.</Text>
-        </View>
+        <EmptyState title="Acesso restrito" message="Apenas administradores podem acessar a auditoria." type="no-permission" />
       </SafeAreaView>
     );
   }
@@ -90,10 +89,9 @@ export function AuditoriaScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
         contentContainerStyle={{ padding: 12, gap: 8 }}
         ListHeaderComponent={
-          <View style={styles.filtersCard}>
+          <Card style={styles.filtersCard}>
             <Text style={styles.filtersTitle}>Filtros</Text>
-            <TextInput
-              style={styles.input}
+            <Input
               value={query}
               onChangeText={setQuery}
               placeholder="Buscar por usuário, recurso ou ID"
@@ -110,18 +108,24 @@ export function AuditoriaScreen() {
               ))}
             </View>
             <Text style={styles.resultText}>Resultado: {filteredItems.length} log(s)</Text>
-          </View>
+          </Card>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.name}>{item.action || 'Ação'} · {item.resource_type || 'recurso'}</Text>
             <Text>Usuário: {item.usuario_nome || item.username || 'Sistema'}</Text>
             <Text>Recurso ID: {item.resource_id ?? '-'}</Text>
             <Text>IP: {item.ip_address || '-'}</Text>
             <Text>Data: {item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : '-'}</Text>
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={<Text style={styles.info}>{refreshing ? 'Carregando logs de auditoria...' : 'Nenhum log de auditoria encontrado.'}</Text>}
+        ListEmptyComponent={
+          <EmptyState
+            title="Sem logs"
+            message={refreshing ? 'Carregando logs de auditoria...' : 'Nenhum log de auditoria encontrado.'}
+            type="empty"
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -129,7 +133,7 @@ export function AuditoriaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: UI.colors.background },
-  filtersCard: { backgroundColor: UI.colors.card, borderRadius: UI.radius.md, padding: 12, marginBottom: 10, gap: 8 },
+  filtersCard: { padding: 12, marginBottom: 10, gap: 8 },
   filtersTitle: { fontSize: 16, fontWeight: '700' },
   input: {
     borderWidth: 1,
@@ -150,8 +154,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: UI.colors.chipActiveBg, borderColor: UI.colors.chipActiveBorder },
   chipText: { fontSize: 12, fontWeight: '600' },
   resultText: { fontSize: 12, color: UI.colors.textMuted, fontWeight: '600' },
-  card: { backgroundColor: UI.colors.card, borderRadius: UI.radius.md, padding: 12 },
+  card: { padding: 12 },
   name: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
   info: { textAlign: 'center', color: UI.colors.textMuted, marginTop: 10 },
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

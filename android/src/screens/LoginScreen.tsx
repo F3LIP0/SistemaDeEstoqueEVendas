@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, Input } from '../components';
 import { UI } from '../theme/ui';
 
 export function LoginScreen() {
@@ -29,32 +30,30 @@ export function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Fluxa</Text>
+      <Card style={styles.card}>
+        <Text style={styles.title}>fluxa</Text>
         <Text style={styles.subtitle}>Versão Android</Text>
 
-        <TextInput
-          style={styles.input}
+        <Input
+          label="Email ou usuário"
           placeholder="Email ou usuário"
           autoCapitalize="none"
           value={emailOrUsername}
           onChangeText={setEmailOrUsername}
         />
 
-        <TextInput
-          style={styles.input}
+        <Input
+          label="Senha"
+          type="password"
           placeholder="Senha"
-          secureTextEntry
           value={senha}
           onChangeText={setSenha}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Pressable style={styles.button} onPress={onSubmit} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Entrar</Text>}
-        </Pressable>
-      </View>
+        <Button label="Entrar" onPress={onSubmit} loading={loading} fullWidth />
+      </Card>
     </SafeAreaView>
   );
 }
@@ -67,7 +66,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    backgroundColor: UI.colors.card,
     padding: 20,
     borderRadius: UI.radius.lg,
     gap: 12,
@@ -81,23 +79,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: UI.colors.textMuted,
     marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: UI.colors.border,
-    borderRadius: UI.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  button: {
-    backgroundColor: UI.colors.primary,
-    paddingVertical: 12,
-    borderRadius: UI.radius.md,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: UI.colors.white,
-    fontWeight: '600',
   },
   error: {
     color: UI.colors.danger,

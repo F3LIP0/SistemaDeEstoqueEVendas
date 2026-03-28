@@ -7,11 +7,11 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, EmptyState, Input } from '../components';
 import { apiRequest } from '../services/api';
 import { UI } from '../theme/ui';
 
@@ -188,7 +188,7 @@ export function UsuariosScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
         contentContainerStyle={{ padding: 12, gap: 8 }}
         ListHeaderComponent={
-          <View style={styles.formCard}>
+          <Card style={styles.formCard}>
             <Text style={styles.formTitle}>{editingId ? 'Editar Usuário' : 'Novo Usuário'}</Text>
             <View style={styles.toggleRow}>
               <Text style={styles.toggleLabel}>Mostrar inativos</Text>
@@ -199,19 +199,18 @@ export function UsuariosScreen() {
                 <Text style={styles.toggleButtonText}>{includeInactive ? 'ON' : 'OFF'}</Text>
               </Pressable>
             </View>
-            <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Nome completo" />
-            <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Usuário de acesso" />
-            <TextInput
-              style={styles.input}
+            <Input style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Nome completo" />
+            <Input style={styles.input} value={username} onChangeText={setUsername} placeholder="Usuário de acesso" />
+            <Input
               value={email}
               onChangeText={setEmail}
               placeholder="E-mail"
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Telefone" />
+            <Input style={styles.input} value={phone} onChangeText={setPhone} placeholder="Telefone" />
             {!editingId ? (
-              <TextInput style={styles.input} value={senha} onChangeText={setSenha} placeholder="Senha" secureTextEntry />
+              <Input style={styles.input} value={senha} onChangeText={setSenha} placeholder="Senha" type="password" />
             ) : null}
 
             <View style={styles.roleRow}>
@@ -227,21 +226,22 @@ export function UsuariosScreen() {
             </View>
 
             <View style={styles.formActions}>
-              <Pressable style={[styles.button, styles.saveButton]} onPress={onSubmit} disabled={submitting}>
-                <Text style={styles.buttonText}>{editingId ? 'Atualizar' : 'Criar'}</Text>
-              </Pressable>
-              <Pressable style={[styles.button, styles.cancelButton]} onPress={clearForm}>
-                <Text style={styles.buttonText}>Limpar</Text>
-              </Pressable>
+              <Button
+                style={styles.actionButton}
+                label={editingId ? 'Atualizar' : 'Criar'}
+                onPress={onSubmit}
+                loading={submitting}
+              />
+              <Button style={styles.actionButton} variant="secondary" label="Limpar" onPress={clearForm} />
             </View>
 
             {!canListAndCreate ? (
               <Text style={styles.hint}>Seu perfil não permite gerenciar usuários.</Text>
             ) : null}
-          </View>
+          </Card>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.name}>{item.full_name}</Text>
             <Text>Usuário: {item.username}</Text>
             <Text>Email: {item.email}</Text>
@@ -252,16 +252,18 @@ export function UsuariosScreen() {
               Status: {item.is_active ? 'Ativo' : 'Inativo'}
             </Text>
             <View style={styles.itemActions}>
-              <Pressable style={[styles.button, styles.editButton]} onPress={() => onEdit(item)}>
-                <Text style={styles.buttonText}>Editar</Text>
-              </Pressable>
-              <Pressable style={[styles.button, styles.deleteButton]} onPress={() => onDelete(item)}>
-                <Text style={styles.buttonText}>Excluir</Text>
-              </Pressable>
+              <Button style={styles.actionButton} variant="secondary" size="sm" label="Editar" onPress={() => onEdit(item)} />
+              <Button style={styles.actionButton} variant="danger" size="sm" label="Excluir" onPress={() => onDelete(item)} />
             </View>
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>{refreshing ? 'Carregando usuários...' : 'Nenhum usuário encontrado.'}</Text>}
+        ListEmptyComponent={
+          <EmptyState
+            title="Sem usuários"
+            message={refreshing ? 'Carregando usuários...' : 'Nenhum usuário encontrado com os filtros atuais.'}
+            type="empty"
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -314,23 +316,12 @@ const styles = StyleSheet.create({
   },
   roleChipText: { fontSize: 12, fontWeight: '600' },
   formActions: { flexDirection: 'row', gap: 8, marginTop: 6 },
-  card: { backgroundColor: UI.colors.card, borderRadius: UI.radius.md, padding: 12 },
+  card: { padding: 12 },
   name: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   statusText: { fontWeight: '700', marginTop: 2 },
   statusActive: { color: UI.colors.success },
   statusInactive: { color: UI.colors.dangerText },
   itemActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: UI.radius.sm,
-    alignItems: 'center',
-  },
-  saveButton: { backgroundColor: UI.colors.primary },
-  cancelButton: { backgroundColor: UI.colors.neutral },
-  editButton: { backgroundColor: UI.colors.secondary },
-  deleteButton: { backgroundColor: UI.colors.danger },
-  buttonText: { color: UI.colors.white, fontWeight: '600' },
+  actionButton: { flex: 1 },
   hint: { fontSize: 12, color: UI.colors.textMuted },
-  empty: { textAlign: 'center', marginTop: 20, color: UI.colors.textMuted },
 });

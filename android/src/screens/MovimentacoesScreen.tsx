@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, EmptyState, Input } from '../components';
 import { apiRequest } from '../services/api';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { UI } from '../theme/ui';
@@ -158,10 +159,9 @@ export function MovimentacoesScreen() {
         ListHeaderComponent={
           <View style={{ gap: 8 }}>
             {canCreate ? (
-              <View style={styles.formCard}>
+              <Card style={styles.formCard}>
                 <Text style={styles.formTitle}>Nova movimentação</Text>
-                <TextInput
-                  style={styles.input}
+                <Input
                   value={productQuery}
                   onChangeText={setProductQuery}
                   placeholder="Buscar produto por nome ou ID"
@@ -203,19 +203,16 @@ export function MovimentacoesScreen() {
                   ))}
                 </View>
 
-                <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="Quantidade" keyboardType="numeric" />
-                <TextInput style={styles.input} value={notes} onChangeText={setNotes} placeholder="Observações" />
+                <Input type="number" value={quantity} onChangeText={setQuantity} placeholder="Quantidade" keyboardType="numeric" />
+                <Input value={notes} onChangeText={setNotes} placeholder="Observações" />
 
-                <Pressable style={[styles.button, styles.saveButton]} onPress={createMovement} disabled={submitting}>
-                  <Text style={styles.buttonText}>{submitting ? 'Salvando...' : 'Registrar movimentação'}</Text>
-                </Pressable>
-              </View>
+                <Button label="Registrar movimentação" onPress={createMovement} loading={submitting} />
+              </Card>
             ) : null}
 
-            <View style={styles.formCard}>
+            <Card style={styles.formCard}>
               <Text style={styles.formTitle}>Filtro de listagem</Text>
-              <TextInput
-                style={styles.input}
+              <Input
                 value={listQuery}
                 onChangeText={setListQuery}
                 placeholder="Buscar por produto, SKU ou ID"
@@ -234,11 +231,11 @@ export function MovimentacoesScreen() {
               <Text style={styles.selectedText}>
                 Resumo: {filteredMovements.length} mov. • IN {movementSummary.IN} • OUT {movementSummary.OUT} • ADJ {movementSummary.ADJUSTMENT}
               </Text>
-            </View>
+            </Card>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Card style={styles.card}>
             <Text style={styles.name}>Mov. #{item.movement_id}</Text>
             <Text>Produto: {item.product_name || '-'}</Text>
             <Text style={styles.typeInfo}>Tipo: {item.movement_type}</Text>
@@ -246,9 +243,15 @@ export function MovimentacoesScreen() {
             <Text>Data: {item.movement_date ? new Date(item.movement_date).toLocaleString('pt-BR') : '-'}</Text>
             <Text>Usuário: {item.usuario_nome || '-'}</Text>
             {!!item.notes && <Text>Observações: {item.notes}</Text>}
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>{refreshing ? 'Carregando movimentações...' : 'Nenhuma movimentação encontrada.'}</Text>}
+        ListEmptyComponent={
+          <EmptyState
+            title="Sem movimentações"
+            message={refreshing ? 'Carregando movimentações...' : 'Nenhuma movimentação encontrada com os filtros atuais.'}
+            type="empty"
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -288,18 +291,10 @@ const styles = StyleSheet.create({
   },
   typeChipActive: { backgroundColor: UI.colors.chipActiveBg, borderColor: UI.colors.chipActiveBorder },
   typeChipText: { fontSize: 12, fontWeight: '600' },
-  button: {
-    paddingVertical: 10,
-    borderRadius: UI.radius.sm,
-    alignItems: 'center',
-  },
-  saveButton: { backgroundColor: UI.colors.primary },
-  buttonText: { color: UI.colors.white, fontWeight: '600' },
-  card: { backgroundColor: UI.colors.card, borderRadius: UI.radius.md, padding: 12 },
+  card: { padding: 12 },
   name: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   typeInfo: { fontWeight: '700', color: UI.colors.textSecondary },
   quantityInfo: { fontWeight: '700' },
   qtyIn: { color: UI.colors.success },
   qtyOut: { color: UI.colors.dangerText },
-  empty: { textAlign: 'center', marginTop: 20, color: UI.colors.textMuted },
 });

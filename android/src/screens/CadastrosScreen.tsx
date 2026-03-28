@@ -1,17 +1,16 @@
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
-  Pressable,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { Button, Input } from '../components';
 import { apiRequest } from '../services/api';
 import { UI } from '../theme/ui';
 
@@ -196,16 +195,13 @@ export function CadastrosScreen() {
       >
         <View style={styles.section}>
           <Text style={styles.title}>Categorias</Text>
-          <TextInput style={styles.input} value={categoryName} onChangeText={setCategoryName} placeholder="Nome da categoria" />
-          <TextInput
-            style={styles.input}
+          <Input style={styles.input} value={categoryName} onChangeText={setCategoryName} placeholder="Nome da categoria" />
+          <Input
             value={categoryDescription}
             onChangeText={setCategoryDescription}
             placeholder="Descrição"
           />
-          <Pressable style={[styles.button, styles.primary]} onPress={createCategory}>
-            <Text style={styles.buttonText}>Adicionar categoria</Text>
-          </Pressable>
+          <Button label="Adicionar categoria" onPress={createCategory} />
           {categories.map((item) => (
             <View key={item.category_id} style={styles.rowItem}>
               <View style={{ flex: 1 }}>
@@ -213,9 +209,7 @@ export function CadastrosScreen() {
                 <Text style={styles.rowSub}>{item.description || '-'}</Text>
               </View>
               {canDelete ? (
-                <Pressable style={[styles.button, styles.danger]} onPress={() => removeCategory(item)}>
-                  <Text style={styles.buttonText}>Excluir</Text>
-                </Pressable>
+                <Button variant="danger" size="sm" label="Excluir" onPress={() => removeCategory(item)} />
               ) : null}
             </View>
           ))}
@@ -223,11 +217,9 @@ export function CadastrosScreen() {
 
         <View style={styles.section}>
           <Text style={styles.title}>Marcas</Text>
-          <TextInput style={styles.input} value={brandName} onChangeText={setBrandName} placeholder="Nome da marca" />
-          <TextInput style={styles.input} value={brandDescription} onChangeText={setBrandDescription} placeholder="Descrição" />
-          <Pressable style={[styles.button, styles.primary]} onPress={createBrand}>
-            <Text style={styles.buttonText}>Adicionar marca</Text>
-          </Pressable>
+          <Input style={styles.input} value={brandName} onChangeText={setBrandName} placeholder="Nome da marca" />
+          <Input style={styles.input} value={brandDescription} onChangeText={setBrandDescription} placeholder="Descrição" />
+          <Button label="Adicionar marca" onPress={createBrand} />
           {brands.map((item) => (
             <View key={item.brand_id} style={styles.rowItem}>
               <View style={{ flex: 1 }}>
@@ -235,9 +227,7 @@ export function CadastrosScreen() {
                 <Text style={styles.rowSub}>{item.description || '-'}</Text>
               </View>
               {canDelete ? (
-                <Pressable style={[styles.button, styles.danger]} onPress={() => removeBrand(item)}>
-                  <Text style={styles.buttonText}>Excluir</Text>
-                </Pressable>
+                <Button variant="danger" size="sm" label="Excluir" onPress={() => removeBrand(item)} />
               ) : null}
             </View>
           ))}
@@ -245,11 +235,9 @@ export function CadastrosScreen() {
 
         <View style={styles.section}>
           <Text style={styles.title}>Unidades</Text>
-          <TextInput style={styles.input} value={unitName} onChangeText={setUnitName} placeholder="Nome da unidade" />
-          <TextInput style={styles.input} value={unitAbbreviation} onChangeText={setUnitAbbreviation} placeholder="Abreviação" />
-          <Pressable style={[styles.button, styles.primary]} onPress={createUnit}>
-            <Text style={styles.buttonText}>Adicionar unidade</Text>
-          </Pressable>
+          <Input style={styles.input} value={unitName} onChangeText={setUnitName} placeholder="Nome da unidade" />
+          <Input style={styles.input} value={unitAbbreviation} onChangeText={setUnitAbbreviation} placeholder="Abreviação" />
+          <Button label="Adicionar unidade" onPress={createUnit} />
           {units.map((item) => (
             <View key={item.unit_id} style={styles.rowItem}>
               <View style={{ flex: 1 }}>
@@ -257,9 +245,7 @@ export function CadastrosScreen() {
                 <Text style={styles.rowSub}>{item.abbreviation}</Text>
               </View>
               {canDelete ? (
-                <Pressable style={[styles.button, styles.danger]} onPress={() => removeUnit(item)}>
-                  <Text style={styles.buttonText}>Excluir</Text>
-                </Pressable>
+                <Button variant="danger" size="sm" label="Excluir" onPress={() => removeUnit(item)} />
               ) : null}
             </View>
           ))}
@@ -292,13 +278,4 @@ const styles = StyleSheet.create({
   },
   rowTitle: { fontSize: 14, fontWeight: '700', color: UI.colors.textPrimary },
   rowSub: { fontSize: 12, color: UI.colors.textMuted },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: UI.radius.sm,
-    alignItems: 'center',
-  },
-  primary: { backgroundColor: UI.colors.primary },
-  danger: { backgroundColor: UI.colors.danger },
-  buttonText: { color: UI.colors.white, fontWeight: '600' },
 });
