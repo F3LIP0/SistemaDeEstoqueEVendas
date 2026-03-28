@@ -6,6 +6,19 @@ const PORT = 8080;
 const API_TARGET = process.env.API_TARGET || 'http://localhost:3000';
 const filePath = path.join(__dirname, 'sistema.html');
 
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon'
+};
+
 const server = http.createServer((req, res) => {
   // Proxy básico para a API do backend
   if (req.url.startsWith('/api')) {
@@ -30,6 +43,33 @@ const server = http.createServer((req, res) => {
     } else {
       proxyReq.end();
     }
+    return;
+  }
+
+  // Servir arquivos estáticos locais (ex.: /assets/logo.png)
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = decodeURIComponent(url.pathname || '/');
+  const normalizedPath = path.normalize(pathname).replace(/^\/+/, '');
+  const staticPath = path.join(__dirname, normalizedPath);
+  if (normalizedPath && staticPath.startsWith(__dirname) && fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+    const ext = path.extname(staticPath).toLowerCase();
+    const mime = MIME_TYPES[ext] || 'application/octet-stream';
+    fs.readFile(staticPath, (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ erro: 'Erro ao ler arquivo estático' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': mime });
+      res.end(data);
+    });
+    return;
+  }
+
+  // Se a rota parece um arquivo estático e não existe, retorna 404 em vez de HTML
+  if (normalizedPath && /\.[a-z0-9]+$/i.test(normalizedPath)) {
+    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ erro: 'Arquivo não encontrado', caminho: normalizedPath }));
     return;
   }
 

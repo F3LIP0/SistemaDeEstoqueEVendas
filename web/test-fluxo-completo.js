@@ -18,8 +18,14 @@ async function req(method, endpoint, body, token) {
 
 async function main() {
     console.log('\n' + '='.repeat(70));
-    console.log('🚀 TESTE DE FLUXO COMPLETO - Fluxa');
+    console.log('🚀 TESTE DE FLUXO COMPLETO - fluxa');
     console.log('='.repeat(70) + '\n');
+
+    let adminToken = null;
+    let novoUserId = null;
+    let novoUserToken = null;
+    let produtoTesteId = null;
+    let produtoTesteNome = null;
     
     try {
         // 1. LOGIN ADMIN
@@ -27,7 +33,7 @@ async function main() {
         console.log('-'.repeat(70));
         let r = await req('POST', '/login', { email: 'admin', senha: 'admin123' });
         if (!r.ok) throw new Error(`❌ Login admin falhou: ${r.data.mensagem}`);
-        const adminToken = r.data.token;
+        adminToken = r.data.token;
         const admin = r.data.usuario;
         console.log(`✅ Login bem-sucedido`);
         console.log(`   Usuário: ${admin.username} (${admin.role_name})`);
@@ -45,7 +51,7 @@ async function main() {
         };
         r = await req('POST', '/usuarios', novoUser, adminToken);
         if (!r.ok) throw new Error(`❌ Criar usuário falhou: ${r.data.mensagem}`);
-        const novoUserId = r.data.id;
+        novoUserId = r.data.id;
         console.log(`✅ Usuário criado com sucesso`);
         console.log(`   ID: ${novoUserId}`);
         console.log(`   Username: ${novoUser.username}`);
@@ -56,19 +62,43 @@ async function main() {
         console.log('-'.repeat(70));
         r = await req('POST', '/login', { email: novoUser.email, senha: novoUser.senha });
         if (!r.ok) throw new Error(`❌ Login novo usuário falhou: ${r.data.mensagem}`);
-        const novoUserToken = r.data.token;
+        novoUserToken = r.data.token;
         const novoUserData = r.data.usuario;
         console.log(`✅ Login bem-sucedido`);
         console.log(`   Usuário: ${novoUserData.username} (${novoUserData.role_name})`);
         console.log(`   Role level: ${novoUserData.role_level}\n`);
+
+        // 3.1 CRIAR PRODUTO TEMPORÁRIO DE TESTE
+        console.log('3️⃣.1  CRIAR PRODUTO TEMPORÁRIO');
+        console.log('-'.repeat(70));
+        produtoTesteNome = `Produto Fluxo ${Date.now()}`;
+        const produtoTeste = {
+            sku: `FLUXO-${Date.now()}`,
+            product_name: produtoTesteNome,
+            unit_id: 1,
+            cost_price: 50,
+            selling_price: 100,
+            minimum_stock: 5,
+            maximum_stock: 200
+        };
+        r = await req('POST', '/produtos', produtoTeste, adminToken);
+        if (!r.ok) throw new Error(`❌ Criar produto temporário falhou: ${r.data.mensagem}`);
+        produtoTesteId = r.data.id;
+        console.log(`✅ Produto temporário criado`);
+        console.log(`   ID: ${produtoTesteId}`);
+        console.log(`   Nome: ${produtoTesteNome}\n`);
         
         // 4. LISTAR PRODUTOS
         console.log('4️⃣  LISTAR PRODUTOS');
         console.log('-'.repeat(70));
-        r = await req('GET', '/produtos?limit=1');
+        r = await req('GET', '/produtos?limit=1', null, novoUserToken);
         if (!r.ok) throw new Error(`❌ Listar produtos falhou`);
         const produtos = r.data.produtos || [];
-        const produtoExistente = produtos[0];
+        const produtoExistente = produtos.find((p) => p.product_id === produtoTesteId) || {
+            product_id: produtoTesteId,
+            product_name: produtoTesteNome,
+            current_stock: 0
+        };
         console.log(`✅ ${r.data.total} produtos encontrados`);
         if (produtoExistente) {
             console.log(`   ID: ${produtoExistente.product_id} | Nome: ${produtoExistente.product_name} | Estoque: ${produtoExistente.current_stock}\n`);
@@ -177,6 +207,14 @@ async function main() {
         console.error('\nDetalhes completos:');
         console.error(erro);
         process.exit(1);
+    } finally {
+        if (adminToken && produtoTesteId) {
+            await req('DELETE', `/produtos/${produtoTesteId}`, null, adminToken);
+        }
+        if (adminToken && novoUserId) {
+            await req('PUT', `/usuarios/${novoUserId}`, { is_active: false }, adminToken);
+            await req('DELETE', `/usuarios/${novoUserId}`, null, adminToken);
+        }
     }
 }
 

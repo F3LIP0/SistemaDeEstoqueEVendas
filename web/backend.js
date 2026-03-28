@@ -359,6 +359,13 @@ function isMissingColumnError(error, columnName) {
     return false;
 }
 
+function isForeignKeyViolation(error) {
+    if (!error) return false;
+    const code = String(error.code || '');
+    const message = String(error.message || '').toLowerCase();
+    return code === '23503' || message.includes('foreign key constraint');
+}
+
 // ============================================
 // ROTAS DA API
 // ============================================
@@ -1287,6 +1294,44 @@ app.delete('/api/produtos/:id', autenticar, autorizar(3), async (req, res) => {
         return res.json({ sucesso: true, mensagem: 'Produto deletado com sucesso', id: result.rows[0].product_id });
         
     } catch (error) {
+        if (isForeignKeyViolation(error)) {
+            try {
+                if (supabase) {
+                    const { data: softData, error: softError } = await supabase
+                        .from('products')
+                        .update({ is_active: false })
+                        .eq('product_id', productId)
+                        .select('product_id')
+                        .single();
+
+                    if (softError) throw softError;
+                    return res.json({
+                        sucesso: true,
+                        mensagem: 'Produto inativado com sucesso (soft delete aplicado)',
+                        id: softData.product_id,
+                        softDelete: true
+                    });
+                }
+
+                const softQuery = `
+                    UPDATE products
+                    SET is_active = false
+                    WHERE product_id = $1
+                    RETURNING product_id
+                `;
+                const softResult = await pool.query(softQuery, [productId]);
+                if (softResult.rows.length > 0) {
+                    return res.json({
+                        sucesso: true,
+                        mensagem: 'Produto inativado com sucesso (soft delete aplicado)',
+                        id: softResult.rows[0].product_id,
+                        softDelete: true
+                    });
+                }
+            } catch (softErr) {
+                console.error('Erro ao aplicar soft delete no produto:', softErr);
+            }
+        }
         console.error('Erro ao deletar produto:', error);
         res.status(500).json({ 
             erro: 'Erro no servidor',
@@ -1982,6 +2027,44 @@ app.delete('/api/usuarios/:id', autenticar, autorizar(3), async (req, res) => {
         return res.json({ sucesso: true, mensagem: 'Usuário deletado com sucesso', id: result.rows[0].user_id });
         
     } catch (error) {
+        if (isForeignKeyViolation(error)) {
+            try {
+                if (supabase) {
+                    const { data: softData, error: softError } = await supabase
+                        .from('users')
+                        .update({ is_active: false, updated_at: new Date().toISOString() })
+                        .eq('user_id', userId)
+                        .select('user_id')
+                        .single();
+
+                    if (softError) throw softError;
+                    return res.json({
+                        sucesso: true,
+                        mensagem: 'Usuário inativado com sucesso (soft delete aplicado)',
+                        id: softData.user_id,
+                        softDelete: true
+                    });
+                }
+
+                const softQuery = `
+                    UPDATE users
+                    SET is_active = false, updated_at = NOW()
+                    WHERE user_id = $1
+                    RETURNING user_id
+                `;
+                const softResult = await pool.query(softQuery, [userId]);
+                if (softResult.rows.length > 0) {
+                    return res.json({
+                        sucesso: true,
+                        mensagem: 'Usuário inativado com sucesso (soft delete aplicado)',
+                        id: softResult.rows[0].user_id,
+                        softDelete: true
+                    });
+                }
+            } catch (softErr) {
+                console.error('Erro ao aplicar soft delete no usuário:', softErr);
+            }
+        }
         console.error('Erro ao deletar usuário:', error);
         res.status(500).json({ 
             erro: 'Erro no servidor',
@@ -2719,22 +2802,18 @@ app.post('/api/movimentacoes', autenticar, autorizar(2, 3), async (req, res) => 
             let refId = reference_id;
 
             if (!refId) {
-                const hoje = new Date();
-                const ymd = hoje.toISOString().split('T')[0].replace(/-/g, '');
-                const base = parseInt(ymd, 10) * 10000;
-                const inicioDia = new Date(hoje); inicioDia.setHours(0, 0, 0, 0);
-                const fimDia = new Date(hoje); fimDia.setHours(23, 59, 59, 999);
-
+                // Gera um inteiro seguro para INT4 (evita overflow como 202603180001)
+                const nowSec = Math.floor(Date.now() / 1000); // ~1.7b em 2026
                 const { data: ultRef } = await supabase
                     .from('stock_movements')
-                    .select('reference_id, movement_date')
-                    .gte('movement_date', inicioDia.toISOString())
-                    .lt('movement_date', fimDia.toISOString())
+                    .select('reference_id')
+                    .not('reference_id', 'is', null)
                     .order('reference_id', { ascending: false })
                     .limit(1);
 
-                const last = ultRef && ultRef[0] && Number(ultRef[0].reference_id) ? Number(ultRef[0].reference_id) : base;
-                refId = last + 1;
+                const last = ultRef && ultRef[0] && Number(ultRef[0].reference_id) ? Number(ultRef[0].reference_id) : 0;
+                const candidate = Math.max(nowSec, last + 1);
+                refId = Math.min(candidate, 2147483647);
             }
             
             const movData = {

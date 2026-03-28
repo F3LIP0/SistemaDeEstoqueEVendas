@@ -1659,6 +1659,67 @@
             abrirModal('modalConfirmacao');
         }
 
+        async function apiJsonRequest(path, options = {}) {
+            const {
+                method = 'GET',
+                body,
+                auth = true,
+                timeoutMs = 15000
+            } = options;
+
+            const headers = {};
+            if (auth && tokenJWT) headers['Authorization'] = `Bearer ${tokenJWT}`;
+            if (body !== undefined) headers['Content-Type'] = 'application/json';
+
+            const controller = new AbortController();
+            const timerId = setTimeout(() => controller.abort(), timeoutMs);
+
+            let response;
+            try {
+                response = await fetch(`${CONFIG.API_URL}${path}`, {
+                    method,
+                    headers,
+                    signal: controller.signal,
+                    ...(body !== undefined ? { body: JSON.stringify(body) } : {})
+                });
+            } catch (erro) {
+                if (erro?.name === 'AbortError') {
+                    throw new Error('Tempo de resposta da API excedido. Tente novamente.');
+                }
+                throw new Error('Falha de conexão com a API. Verifique se o backend está ativo.');
+            } finally {
+                clearTimeout(timerId);
+            }
+
+            let data = {};
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = {};
+                }
+            } else {
+                try {
+                    const text = await response.text();
+                    data = text ? { mensagem: text } : {};
+                } catch (e) {
+                    data = {};
+                }
+            }
+
+            if (auth && response.status === 401) {
+                forcarLogout('Sessão expirada. Faça login novamente.');
+                return { response, data, sessionExpired: true };
+            }
+
+            return { response, data, sessionExpired: false };
+        }
+
+        function apiErrorMessage(data, fallback) {
+            return data?.mensagem || data?.detalhe || data?.erro || fallback;
+        }
+
         aplicarConfiguracoes();
         
         // ============================================
@@ -1686,20 +1747,18 @@
             errorDiv.style.display = 'none';
             
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/login`, {
+                const { response: resposta, data: dados } = await apiJsonRequest('/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    auth: false,
+                    body: {
                         email: emailOrUsername,
-                        username: emailOrUsername, 
-                        senha 
-                    })
+                        username: emailOrUsername,
+                        senha
+                    }
                 });
                 
-                const dados = await resposta.json();
-                
                 if (!resposta.ok) {
-                    throw new Error(dados.mensagem || 'Erro ao fazer login');
+                    throw new Error(apiErrorMessage(dados, 'Erro ao fazer login'));
                 }
                 
                 // Salva credenciais
@@ -1809,18 +1868,10 @@
          */
         async function carregarDashboard() {
             try {
-                 const resposta = await fetch(`${CONFIG.API_URL}/dashboard/estatisticas`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
-
-                if (resposta.status === 401) {
-                    forcarLogout('Sessão expirada. Faça login novamente.');
-                    return;
-                }
+                 const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/dashboard/estatisticas');
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) throw new Error('Erro ao carregar estatísticas');
-                
-                const dados = await resposta.json();
                 
                 // Atualiza cards de estatísticas
                 atualizarCardsEstatisticas(dados);
@@ -2010,23 +2061,23 @@
         let produtosCache = [];
         let editingProductId = null;
         let usuariosCache = [];
+        let usuariosFonteCache = [];
+        let usuariosCacheTimestamp = 0;
         let editingUserId = null;
         let editingUsuario = null;
         let debounceBuscaUsuarios = null;
         let usuariosPaginaAtual = 1;
         let usuariosPorPagina = 8;
+        const USUARIOS_CACHE_TTL_MS = 60 * 1000;
 
         async function carregarProdutos() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/produtos`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/produtos');
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) throw new Error('Erro ao carregar produtos');
-                
-                const dados = await resposta.json();
-            const produtos = dados.produtos || dados;
-            produtosCache = produtos;
+                const produtos = dados.produtos || dados;
+                produtosCache = produtos;
                 
                 const tbody = document.querySelector('#tabelaProdutos tbody');
                 
@@ -2127,30 +2178,26 @@
             
             try {
                 const isEdit = !!editingProductId;
-                const url = isEdit ? `${CONFIG.API_URL}/produtos/${editingProductId}` : `${CONFIG.API_URL}/produtos`;
                 const method = isEdit ? 'PUT' : 'POST';
-                const body = isEdit ? JSON.stringify({
-                    product_name: produto.product_name,
-                    description: produto.description,
-                    cost_price: produto.cost_price,
-                    selling_price: produto.selling_price,
-                    current_stock: produto.current_stock,
-                    minimum_stock: produto.minimum_stock
-                }) : JSON.stringify(produto);
 
-                const resposta = await fetch(url, {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${tokenJWT}`
-                    },
-                    body
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(
+                    isEdit ? `/produtos/${editingProductId}` : '/produtos',
+                    {
+                        method,
+                        body: isEdit ? {
+                            product_name: produto.product_name,
+                            description: produto.description,
+                            cost_price: produto.cost_price,
+                            selling_price: produto.selling_price,
+                            current_stock: produto.current_stock,
+                            minimum_stock: produto.minimum_stock
+                        } : produto
+                    }
                 });
-                
-                const dados = await resposta.json();
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) {
-                    throw new Error(dados.mensagem || 'Erro ao salvar produto');
+                    throw new Error(apiErrorMessage(dados, 'Erro ao salvar produto'));
                 }
                 
                 fecharModal('modalProduto');
@@ -2193,12 +2240,11 @@
         async function deletarProduto(id) {
             confirmarAcao('Deseja excluir este produto? Esta ação não pode ser desfeita.', async () => {
                 try {
-                    const resposta = await fetch(`${CONFIG.API_URL}/produtos/${id}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                    const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/produtos/${id}`, {
+                        method: 'DELETE'
                     });
-                    const dados = await resposta.json();
-                    if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao excluir produto');
+                    if (sessionExpired) return;
+                    if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir produto'));
                     mostrarNotificacao('Produto excluído com sucesso!', 'success');
                     carregarProdutos();
                 } catch (erro) {
@@ -2217,13 +2263,10 @@
          */
         async function carregarVendas() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/vendas?limit=20`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/vendas?limit=20');
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) throw new Error('Erro ao carregar vendas');
-                
-                const dados = await resposta.json();
                 const vendas = dados.vendas || dados;
                 
                 // Tabela completa de vendas
@@ -2550,28 +2593,24 @@
                         is_active: isActive
                     };
 
-                const resposta = await fetch(
-                    emEdicao ? `${CONFIG.API_URL}/usuarios/${editingUserId}` : `${CONFIG.API_URL}/usuarios`,
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(
+                    emEdicao ? `/usuarios/${editingUserId}` : '/usuarios',
                     {
-                    method: emEdicao ? 'PUT' : 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${tokenJWT}`
-                    },
-                    body: JSON.stringify(payload)
-                });
-                
-                const dados = await resposta.json();
+                        method: emEdicao ? 'PUT' : 'POST',
+                        body: payload
+                    }
+                );
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) {
-                    throw new Error(dados.mensagem || (emEdicao ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário'));
+                    throw new Error(apiErrorMessage(dados, emEdicao ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário'));
                 }
                 
                 fecharModal('modalUsuario');
                 mostrarNotificacao(emEdicao ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!', 'success');
                 editingUserId = null;
                 editingUsuario = null;
-                carregarUsuarios();
+                carregarUsuarios(true, true);
                 
             } catch (erro) {
                 if (CONFIG.DEBUG) console.error('Erro ao salvar usuário:', erro);
@@ -2612,20 +2651,16 @@
             if (!userId) return;
             confirmarAcao('Deseja excluir este usuário?', async () => {
                 try {
-                    const resposta = await fetch(`${CONFIG.API_URL}/usuarios/${userId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${tokenJWT}`
-                        }
+                    const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/usuarios/${userId}`, {
+                        method: 'DELETE'
                     });
-
-                    const dados = await resposta.json();
+                    if (sessionExpired) return;
                     if (!resposta.ok) {
-                        throw new Error(dados.mensagem || 'Erro ao excluir usuário');
+                        throw new Error(apiErrorMessage(dados, 'Erro ao excluir usuário'));
                     }
 
                     mostrarNotificacao('Usuário excluído com sucesso!', 'success');
-                    carregarUsuarios();
+                    carregarUsuarios(true, true);
                 } catch (erro) {
                     if (CONFIG.DEBUG) console.error('Erro ao excluir usuário:', erro);
                     mostrarErro(erro.message || 'Erro ao excluir usuário');
@@ -2639,20 +2674,16 @@
             const acao = proximoStatus ? 'ativar' : 'inativar';
             confirmarAcao(`Deseja ${acao} este usuário?`, async () => {
                 try {
-                    const resposta = await fetch(`${CONFIG.API_URL}/usuarios/${userId}`, {
+                    const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/usuarios/${userId}`, {
                         method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${tokenJWT}`
-                        },
-                        body: JSON.stringify({ is_active: proximoStatus })
+                        body: { is_active: proximoStatus }
                     });
-                    const dados = await resposta.json();
+                    if (sessionExpired) return;
                     if (!resposta.ok) {
-                        throw new Error(dados.mensagem || 'Erro ao atualizar status do usuário');
+                        throw new Error(apiErrorMessage(dados, 'Erro ao atualizar status do usuário'));
                     }
                     mostrarNotificacao(`Usuário ${proximoStatus ? 'ativado' : 'inativado'} com sucesso!`, 'success');
-                    carregarUsuarios();
+                    carregarUsuarios(false, true);
                 } catch (erro) {
                     mostrarErro(erro.message || 'Erro ao atualizar status do usuário');
                 }
@@ -2672,13 +2703,10 @@
 
         async function carregarSaldoEstoque() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/produtos?limit=500`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/produtos?limit=500');
+                if (sessionExpired) return;
 
                 if (!resposta.ok) throw new Error('Erro ao carregar produtos');
-
-                const dados = await resposta.json();
                 const produtos = dados.produtos || [];
                 const tbody = document.querySelector('#tabelaSaldoEstoque tbody');
                 if (!tbody) return;
@@ -2735,13 +2763,10 @@
          */
         async function carregarMovimentacoes() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/movimentacoes?limit=50`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/movimentacoes?limit=50');
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) throw new Error('Erro ao carregar movimentações');
-                
-                const dados = await resposta.json();
                 const movimentacoes = dados.movimentacoes || [];
                 
                 const tbody = document.querySelector('#tabelaMovimentacoes tbody');
@@ -2823,13 +2848,10 @@
                 if (tituloEl) tituloEl.textContent = titulos[tipo] || 'Nova Movimentação';
                 
                 // Carrega produtos para o select
-                const resposta = await fetch(`${CONFIG.API_URL}/produtos?limit=500`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/produtos?limit=500');
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) throw new Error('Erro ao carregar produtos (Status: ' + resposta.status + ')');
-                
-                const dados = await resposta.json();
                 const produtos = dados.produtos || [];
                 
                 const select = document.getElementById('movProduto');
@@ -2904,19 +2926,14 @@
                 if (refId && refId !== '') payload.reference_id = parseInt(refId);
                 
                 // Envia para API
-                const resposta = await fetch(`${CONFIG.API_URL}/movimentacoes`, {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/movimentacoes', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${tokenJWT}`
-                    },
-                    body: JSON.stringify(payload)
+                    body: payload
                 });
-                
-                const dados = await resposta.json();
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) {
-                    throw new Error(dados.mensagem || dados.detalhe || 'Erro ao salvar movimentação');
+                    throw new Error(apiErrorMessage(dados, 'Erro ao salvar movimentação'));
                 }
                 
                 mostrarNotificacao('✅ Movimentação registrada com sucesso!', 'success');
@@ -2939,18 +2956,10 @@
          */
         async function carregarPonto() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/ponto`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
-
-                if (resposta.status === 401) {
-                    forcarLogout('Sessão expirada. Faça login novamente.');
-                    return;
-                }
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/ponto');
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) throw new Error('Erro ao carregar ponto');
-                
-                const dados = await resposta.json();
                 const registros = dados.registros || dados || [];
                 
                 const tbody = document.querySelector('#tabelaPonto tbody');
@@ -3178,92 +3187,116 @@
             carregarUsuarios();
         }
 
+        function cacheUsuariosValido() {
+            return usuariosCacheTimestamp > 0 && (Date.now() - usuariosCacheTimestamp) < USUARIOS_CACHE_TTL_MS;
+        }
+
+        function aplicarFiltroUsuarios(lista, filtroStatus, termoBusca) {
+            let usuarios = Array.isArray(lista) ? lista : [];
+
+            if (filtroStatus === 'inativos') {
+                usuarios = usuarios.filter(u => !u.is_active);
+            } else if (filtroStatus === 'ativos') {
+                usuarios = usuarios.filter(u => u.is_active);
+            }
+
+            if (termoBusca) {
+                usuarios = usuarios.filter(u => {
+                    const nome = String(u?.full_name || '').toLowerCase();
+                    const email = String(u?.email || '').toLowerCase();
+                    const username = String(u?.username || '').toLowerCase();
+                    return nome.includes(termoBusca) || email.includes(termoBusca) || username.includes(termoBusca);
+                });
+            }
+
+            return usuarios;
+        }
+
+        function renderizarTabelaUsuarios(usuariosOriginais, filtroStatus, termoBusca) {
+            atualizarContadoresFiltroUsuarios(usuariosOriginais);
+
+            const usuariosFiltrados = aplicarFiltroUsuarios(usuariosOriginais, filtroStatus, termoBusca);
+            const totalUsuarios = usuariosFiltrados.length;
+            const totalPaginas = Math.max(1, Math.ceil(totalUsuarios / usuariosPorPagina));
+            if (usuariosPaginaAtual > totalPaginas) usuariosPaginaAtual = totalPaginas;
+            const inicio = (usuariosPaginaAtual - 1) * usuariosPorPagina;
+            const usuariosPagina = usuariosFiltrados.slice(inicio, inicio + usuariosPorPagina);
+
+            usuariosCache = usuariosOriginais;
+            const tbody = document.querySelector('#tabelaUsuarios tbody');
+            if (!tbody) return;
+
+            atualizarPaginacaoUsuarios(totalUsuarios, usuariosPaginaAtual, totalPaginas);
+
+            if (usuariosFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #a0aec0;">Nenhum usuário encontrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = usuariosPagina.map(u => {
+                const status = u.is_active ? 'Ativo' : 'Inativo';
+                const statusCor = u.is_active ? '#48bb78' : '#f56565';
+                const podeEditar = (usuarioLogado?.role_level || 0) >= 3;
+                const podeExcluir = (usuarioLogado?.role_level || 0) >= 3;
+                const criadoEm = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '-';
+                const ultimoLogin = u.last_login ? new Date(u.last_login).toLocaleString('pt-BR') : '-';
+                return `
+                    <tr>
+                        <td>${renderizarAvatarTabela(u.full_name || u.username, u.avatar_url)}</td>
+                        <td>${esc(u.full_name || '-')}</td>
+                        <td>${esc(u.email || '-')}</td>
+                        <td>${esc(u.username || '-')}</td>
+                        <td>${esc(u.role_name || '-')}</td>
+                        <td>${criadoEm}</td>
+                        <td>${ultimoLogin}</td>
+                        <td><span style="color: ${statusCor}; font-weight: 600;">${status}</span></td>
+                        <td>
+                            ${podeEditar ? `
+                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="editarUsuario(${u.user_id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: ${u.is_active ? '#ed8936' : '#48bb78'}; color: white; margin-left: 6px;" onclick="alternarStatusUsuario(${u.user_id}, ${u.is_active ? 'true' : 'false'})">
+                                    <i class="fas ${u.is_active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                                </button>
+                            ` : ''}
+                            ${podeExcluir ? `
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: #f56565; color: white; margin-left: 6px;" onclick="deletarUsuario(${u.user_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : '<span style="color: #a0aec0;">-</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         /**
          * Carrega lista de usuários
          */
-        async function carregarUsuarios(resetPagina = false) {
+        async function carregarUsuarios(resetPagina = false, forceReload = false) {
             try {
-            if (resetPagina) usuariosPaginaAtual = 1;
+                if (resetPagina) usuariosPaginaAtual = 1;
                 const filtroStatus = document.getElementById('usuariosFiltroStatus')?.value || 'ativos';
                 const termoBusca = (document.getElementById('usuariosBusca')?.value || '').trim().toLowerCase();
                 atualizarEstiloFiltroUsuarios();
                 atualizarEstadoBotaoLimparBuscaUsuarios();
-                const incluirInativos = filtroStatus === 'ativos' ? '0' : '1';
-                const resposta = await fetch(`${CONFIG.API_URL}/usuarios?incluir_inativos=${incluirInativos}`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
-                
-                if (!resposta.ok) throw new Error('Erro ao carregar usuários');
-                
-                const dados = await resposta.json();
-                const usuariosOriginais = dados.usuarios || dados || [];
-                atualizarContadoresFiltroUsuarios(usuariosOriginais);
 
-                let usuarios = usuariosOriginais;
-                if (filtroStatus === 'inativos') {
-                    usuarios = (usuarios || []).filter(u => !u.is_active);
-                }
-                if (termoBusca) {
-                    usuarios = (usuarios || []).filter(u => {
-                        const nome = String(u?.full_name || '').toLowerCase();
-                        const email = String(u?.email || '').toLowerCase();
-                        const username = String(u?.username || '').toLowerCase();
-                        return nome.includes(termoBusca) || email.includes(termoBusca) || username.includes(termoBusca);
-                    });
-                }
-
-                const totalUsuarios = usuarios.length;
-                const totalPaginas = Math.max(1, Math.ceil(totalUsuarios / usuariosPorPagina));
-                if (usuariosPaginaAtual > totalPaginas) usuariosPaginaAtual = totalPaginas;
-                const inicio = (usuariosPaginaAtual - 1) * usuariosPorPagina;
-                const usuariosPagina = usuarios.slice(inicio, inicio + usuariosPorPagina);
-
-                usuariosCache = usuarios;
-                const tbody = document.querySelector('#tabelaUsuarios tbody');
-                if (!tbody) return;
-
-                atualizarPaginacaoUsuarios(totalUsuarios, usuariosPaginaAtual, totalPaginas);
-
-                if (!usuarios || usuarios.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #a0aec0;">Nenhum usuário encontrado</td></tr>';
+                if (!forceReload && cacheUsuariosValido()) {
+                    renderizarTabelaUsuarios(usuariosFonteCache, filtroStatus, termoBusca);
                     return;
                 }
 
-                tbody.innerHTML = usuariosPagina.map(u => {
-                    const status = u.is_active ? 'Ativo' : 'Inativo';
-                    const statusCor = u.is_active ? '#48bb78' : '#f56565';
-                    const podeEditar = (usuarioLogado?.role_level || 0) >= 3;
-                    const podeExcluir = (usuarioLogado?.role_level || 0) >= 3;
-                    const criadoEm = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '-';
-                    const ultimoLogin = u.last_login ? new Date(u.last_login).toLocaleString('pt-BR') : '-';
-                    return `
-                        <tr>
-                            <td>${renderizarAvatarTabela(u.full_name || u.username, u.avatar_url)}</td>
-                            <td>${esc(u.full_name || '-')}</td>
-                            <td>${esc(u.email || '-')}</td>
-                            <td>${esc(u.username || '-')}</td>
-                            <td>${esc(u.role_name || '-')}</td>
-                            <td>${criadoEm}</td>
-                            <td>${ultimoLogin}</td>
-                            <td><span style="color: ${statusCor}; font-weight: 600;">${status}</span></td>
-                            <td>
-                                ${podeEditar ? `
-                                    <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="editarUsuario(${u.user_id})">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn" style="padding: 6px 10px; font-size: 12px; background: ${u.is_active ? '#ed8936' : '#48bb78'}; color: white; margin-left: 6px;" onclick="alternarStatusUsuario(${u.user_id}, ${u.is_active ? 'true' : 'false'})">
-                                        <i class="fas ${u.is_active ? 'fa-user-slash' : 'fa-user-check'}"></i>
-                                    </button>
-                                ` : ''}
-                                ${podeExcluir ? `
-                                    <button class="btn" style="padding: 6px 10px; font-size: 12px; background: #f56565; color: white; margin-left: 6px;" onclick="deletarUsuario(${u.user_id})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                ` : '<span style="color: #a0aec0;">-</span>'}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
+                const incluirInativos = filtroStatus === 'ativos' ? '0' : '1';
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/usuarios?incluir_inativos=${incluirInativos}`);
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar usuários');
+                
+                const usuariosOriginais = dados.usuarios || dados || [];
+                usuariosFonteCache = Array.isArray(usuariosOriginais) ? usuariosOriginais : [];
+                usuariosCacheTimestamp = Date.now();
+
+                renderizarTabelaUsuarios(usuariosFonteCache, filtroStatus, termoBusca);
                 
             } catch (erro) {
                 if (CONFIG.DEBUG) console.error('Erro ao carregar usuários:', erro);
@@ -3277,11 +3310,9 @@
 
         async function carregarCategorias() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/categorias`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
-                const dados = await resposta.json();
-                if (!resposta.ok) throw new Error(dados.mensagem || 'Erro ao carregar categorias');
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/categorias');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error(apiErrorMessage(dados, 'Erro ao carregar categorias'));
                 const categorias = dados.categorias || [];
                 const tbody = document.querySelector('#tabelaCategorias tbody');
                 if (!tbody) return;
@@ -3312,16 +3343,12 @@
             const nome = document.getElementById('catNome')?.value.trim();
             const desc = document.getElementById('catDescricao')?.value.trim();
             if (!nome) return mostrarErro('Nome da categoria é obrigatório');
-            const resposta = await fetch(`${CONFIG.API_URL}/categorias`, {
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/categorias', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${tokenJWT}`
-                },
-                body: JSON.stringify({ category_name: nome, description: desc || null })
+                body: { category_name: nome, description: desc || null }
             });
-            const dados = await resposta.json();
-            if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao criar categoria');
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao criar categoria'));
             document.getElementById('catNome').value = '';
             document.getElementById('catDescricao').value = '';
             mostrarNotificacao('Categoria criada!', 'success');
@@ -3330,12 +3357,11 @@
 
         async function deletarCategoria(id) {
             confirmarAcao('Deseja excluir esta categoria?', async () => {
-                const resposta = await fetch(`${CONFIG.API_URL}/categorias/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/categorias/${id}`, {
+                    method: 'DELETE'
                 });
-                const dados = await resposta.json();
-                if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao excluir categoria');
+                if (sessionExpired) return;
+                if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir categoria'));
                 mostrarNotificacao('Categoria excluída!', 'success');
                 carregarCategorias();
             });
@@ -3343,11 +3369,9 @@
 
         async function carregarMarcas() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/marcas`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
-                const dados = await resposta.json();
-                if (!resposta.ok) throw new Error(dados.mensagem || 'Erro ao carregar marcas');
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/marcas');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error(apiErrorMessage(dados, 'Erro ao carregar marcas'));
                 const marcas = dados.marcas || [];
                 const tbody = document.querySelector('#tabelaMarcas tbody');
                 if (!tbody) return;
@@ -3378,16 +3402,12 @@
             const nome = document.getElementById('marcaNome')?.value.trim();
             const desc = document.getElementById('marcaDescricao')?.value.trim();
             if (!nome) return mostrarErro('Nome da marca é obrigatório');
-            const resposta = await fetch(`${CONFIG.API_URL}/marcas`, {
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/marcas', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${tokenJWT}`
-                },
-                body: JSON.stringify({ brand_name: nome, description: desc || null })
+                body: { brand_name: nome, description: desc || null }
             });
-            const dados = await resposta.json();
-            if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao criar marca');
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao criar marca'));
             document.getElementById('marcaNome').value = '';
             document.getElementById('marcaDescricao').value = '';
             mostrarNotificacao('Marca criada!', 'success');
@@ -3396,12 +3416,11 @@
 
         async function deletarMarca(id) {
             confirmarAcao('Deseja excluir esta marca?', async () => {
-                const resposta = await fetch(`${CONFIG.API_URL}/marcas/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/marcas/${id}`, {
+                    method: 'DELETE'
                 });
-                const dados = await resposta.json();
-                if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao excluir marca');
+                if (sessionExpired) return;
+                if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir marca'));
                 mostrarNotificacao('Marca excluída!', 'success');
                 carregarMarcas();
             });
@@ -3409,11 +3428,9 @@
 
         async function carregarUnidades() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/unidades`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
-                const dados = await resposta.json();
-                if (!resposta.ok) throw new Error(dados.mensagem || 'Erro ao carregar unidades');
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/unidades');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error(apiErrorMessage(dados, 'Erro ao carregar unidades'));
                 const unidades = dados.unidades || [];
                 const tbody = document.querySelector('#tabelaUnidades tbody');
                 if (!tbody) return;
@@ -3444,16 +3461,12 @@
             const nome = document.getElementById('unidadeNome')?.value.trim();
             const abrev = document.getElementById('unidadeAbrev')?.value.trim();
             if (!nome || !abrev) return mostrarErro('Nome e abreviação são obrigatórios');
-            const resposta = await fetch(`${CONFIG.API_URL}/unidades`, {
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/unidades', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${tokenJWT}`
-                },
-                body: JSON.stringify({ unit_name: nome, abbreviation: abrev })
+                body: { unit_name: nome, abbreviation: abrev }
             });
-            const dados = await resposta.json();
-            if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao criar unidade');
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao criar unidade'));
             document.getElementById('unidadeNome').value = '';
             document.getElementById('unidadeAbrev').value = '';
             mostrarNotificacao('Unidade criada!', 'success');
@@ -3462,12 +3475,11 @@
 
         async function deletarUnidade(id) {
             confirmarAcao('Deseja excluir esta unidade?', async () => {
-                const resposta = await fetch(`${CONFIG.API_URL}/unidades/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/unidades/${id}`, {
+                    method: 'DELETE'
                 });
-                const dados = await resposta.json();
-                if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao excluir unidade');
+                if (sessionExpired) return;
+                if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir unidade'));
                 mostrarNotificacao('Unidade excluída!', 'success');
                 carregarUnidades();
             });
@@ -3475,11 +3487,9 @@
 
         async function carregarAuditoria() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/auditoria?limit=200`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/auditoria?limit=200');
+                if (sessionExpired) return;
                 if (!resposta.ok) throw new Error('Erro ao carregar auditoria');
-                const dados = await resposta.json();
                 const logs = dados.logs || [];
                 const tbody = document.querySelector('#tabelaAuditoria tbody');
                 if (!tbody) return;
@@ -3504,11 +3514,9 @@
 
         async function carregarConfiguracoesSistema() {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/configuracoes`, {
-                    headers: { 'Authorization': `Bearer ${tokenJWT}` }
-                });
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/configuracoes');
+                if (sessionExpired) return;
                 if (!resposta.ok) throw new Error('Erro ao carregar configurações');
-                const dados = await resposta.json();
                 const cfg = dados.configuracoes || {};
                 document.getElementById('cfgEmpresa').value = cfg.empresa_nome || '';
                 document.getElementById('cfgMoeda').value = cfg.moeda || '';
@@ -3526,16 +3534,12 @@
                 imposto_padrao: document.getElementById('cfgImposto')?.value || '0',
                 estoque_minimo_padrao: document.getElementById('cfgEstoqueMin')?.value || '0'
             };
-            const resposta = await fetch(`${CONFIG.API_URL}/configuracoes`, {
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/configuracoes', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${tokenJWT}`
-                },
-                body: JSON.stringify(payload)
+                body: payload
             });
-            const dados = await resposta.json();
-            if (!resposta.ok) return mostrarErro(dados.mensagem || 'Erro ao salvar configurações');
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao salvar configurações'));
             mostrarNotificacao('Configurações globais salvas!', 'success');
         }
         
@@ -3544,19 +3548,14 @@
          */
         async function registrarPonto(tipo) {
             try {
-                const resposta = await fetch(`${CONFIG.API_URL}/ponto`, {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/ponto', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${tokenJWT}`
-                    },
-                    body: JSON.stringify({ tipo })
+                    body: { tipo }
                 });
-                
-                const dados = await resposta.json();
+                if (sessionExpired) return;
                 
                 if (!resposta.ok) {
-                    throw new Error(dados.mensagem || 'Erro ao registrar ponto');
+                    throw new Error(apiErrorMessage(dados, 'Erro ao registrar ponto'));
                 }
                 
                 const tipoLabel = tipo === 'entrada' ? 'Entrada' : 'Saída';

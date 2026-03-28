@@ -1,5 +1,5 @@
 -- ============================================
--- FLUXA - SCHEMA POSTGRESQL
+-- fluxa - SCHEMA POSTGRESQL
 -- Para Supabase
 -- ============================================
 
@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
     role_id INT NOT NULL REFERENCES roles(role_id),
     full_name VARCHAR(150) NOT NULL,
     phone VARCHAR(20),
+    avatar_url TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_by INT REFERENCES users(user_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
