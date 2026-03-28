@@ -1,4 +1,4 @@
-# ✅ FLUXA - DOCUMENTAÇÃO COMPLETA v2.0
+# ✅ fluxa - DOCUMENTAÇÃO COMPLETA v2.0
 
 ## 🎯 STATUS DO PROJETO
 
@@ -144,13 +144,14 @@ npm start
    GET    /api/usuarios                 - Listar usuários (Manager/Admin)
    PUT    /api/usuarios/:id             - Atualizar usuário (Admin)
    DELETE /api/usuarios/:id             - Deletar usuário (Admin)
-   GET    /api/productos                - Listar produtos (Todos)
-   POST   /api/productos                - Criar produto (Manager/Admin)
-   PUT    /api/productos/:id            - Atualizar produto (Manager/Admin)
-   DELETE /api/productos/:id            - Deletar produto (Admin)
+  GET    /api/produtos                 - Listar produtos (Todos)
+  POST   /api/produtos                 - Criar produto (Manager/Admin)
+  PUT    /api/produtos/:id             - Atualizar produto (Manager/Admin)
+  DELETE /api/produtos/:id             - Deletar produto (Admin)
    GET    /api/vendas                   - Listar vendas (Autenticado)
    GET    /api/dashboard/estatisticas   - Estatísticas (Autenticado)
    GET    /api/ponto                    - Controle de ponto (Autenticado)
+  POST   /api/ponto                    - Registrar entrada/saída (Autenticado)
    GET    /api/movimentacoes            - Movimentações (Manager/Admin)
    GET    /api/health                   - Status do servidor
 ```
@@ -230,9 +231,14 @@ curl -X PUT http://localhost:3000/api/usuarios/2 \
   -H "Content-Type: application/json" \
   -d '{
     "full_name": "João Silva Atualizado",
-    "role_name": "EMPLOYEE"
+    "role_name": "EMPLOYEE",
+    "avatar_url": "https://exemplo.com/avatar.jpg",
+    "is_active": true,
+    "senha": "NovaSenha123"
   }'
 ```
+
+> Observação: o campo `senha` no `PUT /api/usuarios/:id` é opcional. Só envie quando quiser redefinir a senha do usuário.
 
 #### DELETE /api/usuarios/:id
 Deletar usuário (Admin)
@@ -248,19 +254,19 @@ curl -X DELETE http://localhost:3000/api/usuarios/2 \
 
 ### 4.3 Produtos (CRUD Completo)
 
-#### GET /api/productos
+#### GET /api/produtos
 Listar produtos (Todos)
 
 ```bash
-curl -X GET "http://localhost:3000/api/productos?page=1&limit=10" \
+curl -X GET "http://localhost:3000/api/produtos?page=1&limit=10" \
   -H "Authorization: Bearer TOKEN"
 ```
 
-#### POST /api/productos
+#### POST /api/produtos
 Criar produto (Manager/Admin)
 
 ```bash
-curl -X POST http://localhost:3000/api/productos \
+curl -X POST http://localhost:3000/api/produtos \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -281,11 +287,11 @@ curl -X POST http://localhost:3000/api/productos \
 - Preço venda >= preço custo
 - Estoque mín <= estoque máx
 
-#### PUT /api/productos/:id
+#### PUT /api/produtos/:id
 Atualizar produto (Manager/Admin)
 
 ```bash
-curl -X PUT http://localhost:3000/api/productos/10 \
+curl -X PUT http://localhost:3000/api/produtos/10 \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -295,13 +301,21 @@ curl -X PUT http://localhost:3000/api/productos/10 \
   }'
 ```
 
-#### DELETE /api/productos/:id
+#### DELETE /api/produtos/:id
 Deletar produto (Admin) - Soft delete
 
 ```bash
-curl -X DELETE http://localhost:3000/api/productos/10 \
+curl -X DELETE http://localhost:3000/api/produtos/10 \
   -H "Authorization: Bearer TOKEN"
 ```
+
+### 4.3.1 Melhorias de UX (Tela de Usuários)
+
+- Filtro de status com 3 estados (`Ativos`, `Todos`, `Inativos`) e contadores dinâmicos.
+- Busca por nome, e-mail e username com debounce para reduzir recargas desnecessárias.
+- Paginação client-side com navegação anterior/próxima e seletor de itens por página.
+- Persistência de preferências de listagem no `localStorage` (filtro, busca e tamanho de página).
+- Modal de usuário em modo criação/edição com suporte a `avatar_url`, `is_active` e redefinição opcional de senha.
 
 ---
 
@@ -364,8 +378,25 @@ curl -X GET http://localhost:3000/api/dashboard/estatisticas \
 Consultar ponto (Autenticado)
 
 ```bash
-curl -X GET "http://localhost:3000/api/ponto?mes=01&ano=2026" \
+curl -X GET "http://localhost:3000/api/ponto?data=2026-03-05" \
   -H "Authorization: Bearer TOKEN"
+```
+
+#### POST /api/ponto
+Registrar entrada ou saída (Autenticado)
+
+```bash
+curl -X POST "http://localhost:3000/api/ponto" \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"tipo":"entrada"}'
+```
+
+```bash
+curl -X POST "http://localhost:3000/api/ponto" \
+  -H "Authorization: Bearer TOKEN"
+  -H "Content-Type: application/json" \
+  -d '{"tipo":"saida"}'
 ```
 
 ---

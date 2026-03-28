@@ -8,7 +8,7 @@ Salve como `docs/openapi.yaml`:
 openapi: 3.0.0
 
 info:
-  title: Fluxa API
+  title: fluxa API
   description: |
     API RESTful para gerenciamento de estoque, vendas e ponto de presença.
     

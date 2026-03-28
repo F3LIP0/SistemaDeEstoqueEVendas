@@ -1,4 +1,4 @@
-# 🏢 Fluxa v2.0
+# 🏢 fluxa v2.0
 
 [![Node.js](https://img.shields.io/badge/Node.js-16%2B-green)]()
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-blue)]()
@@ -61,6 +61,11 @@ npm install
    PORT=3000
    ```
 
+   Você pode iniciar a configuração copiando o template:
+   ```bash
+   cp .env.example .env
+   ```
+
     d. **Conexão com Supabase (alternativa via HTTP ou pooler)**
 
     - Opção 1 — Conexão direta (quando o container permite IPv4):
@@ -97,6 +102,29 @@ npm run start:all
 Para desenvolvimento com auto-reload (backend):
 ```bash
 npm run dev
+```
+
+## ✅ Validação Rápida (Pós-Refatoração)
+
+Rode a bateria completa com backend automático (sobe se não estiver ativo):
+
+```bash
+npm run test:all
+```
+
+Se quiser executar apenas as suítes sem automação de backend:
+
+```bash
+npm run test:all:raw
+```
+
+Scripts disponíveis:
+
+```bash
+npm test              # Endpoints principais
+npm run test:fluxo    # Fluxo ponta a ponta
+npm run test:sistema  # Validação completa do sistema
+npm run health        # Health check da API
 ```
 
 5. **Abra o sistema no navegador**
@@ -174,6 +202,9 @@ O sistema utiliza uma estrutura completa e profissional com:
 ```
 POST /api/login               - Autenticação de usuário
 POST /api/usuarios            - Criar usuário (Manager/Admin - Níveis 2 e 3)
+GET  /api/usuarios            - Listar usuários (Manager/Admin)
+PUT  /api/usuarios/:id        - Atualizar usuário (Admin)
+DELETE /api/usuarios/:id      - Excluir usuário (Admin)
 ```
 
 ### Produtos
@@ -196,6 +227,22 @@ GET  /api/dashboard/estatisticas  - Estatísticas gerais (Autenticado)
 ```
 GET  /api/ponto               - Registros de ponto (Autenticado)
                                Employee vê apenas os próprios
+POST /api/ponto               - Registrar entrada/saída (Autenticado)
+```
+
+### Perfis de Usuário
+``` 
+Campo avatar_url              - URL da foto de perfil no usuário
+Campo is_active               - Controle de ativação/inativação de usuário
+Campo senha (PUT /usuarios/:id) - Redefinição opcional de senha por admin
+```
+
+### UX da Tela de Usuários (Web)
+```
+Filtro de status persistente  - Ativos/Todos/Inativos com contadores
+Busca por nome/email/username - Campo com debounce e limpeza rápida
+Paginação no frontend         - Navegação por página com seletor de itens (8/15/30)
+Preferências persistentes     - Filtro, busca e tamanho de página salvos no navegador
 ```
 
 ### Movimentações
@@ -301,7 +348,7 @@ Esta versão foi migrada de MySQL para PostgreSQL com melhorias significativas:
 
 ## 📝 TODO / Melhorias Futuras
 
-- [ ] Implementar edição de produtos no frontend
+- [x] Implementar redefinição de senha no frontend (fluxo de admin)
 - [ ] Sistema de backup automático do PostgreSQL
 - [ ] Relatórios em PDF usando pdfmake
 - [ ] Gráficos dinâmicos com dados reais da API

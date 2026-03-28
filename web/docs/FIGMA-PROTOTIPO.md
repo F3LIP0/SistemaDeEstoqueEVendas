@@ -6,7 +6,7 @@
 
 | Arquivo | Link | Status |
 |---------|------|--------|
-| **Fluxa - High Fidelity** | [Abrir no Figma](https://www.figma.com/file/seu-projeto-aqui) | 📋 Criar |
+| **fluxa - High Fidelity** | [Abrir no Figma](https://www.figma.com/file/seu-projeto-aqui) | 📋 Criar |
 | **Design System - Components** | [Abrir no Figma](https://www.figma.com/file/seu-design-system) | 📋 Criar |
 | **User Flows & Wireframes** | [Abrir no Figma](https://www.figma.com/file/seu-wireframes) | 📋 Criar |
 | **Protótipo Interativo** | [Abrir no Figma](https://www.figma.com/proto/seu-proto) | 📋 Criar |
@@ -24,7 +24,7 @@
 
 2. **Criar Novo File**:
    - Clique em "New file"
-   - Nomeie: "Fluxa v2.0"
+   - Nomeie: "fluxa v2.0"
    - Selecione Desktop
 
 3. **Configurar Grade**:
@@ -37,7 +37,7 @@
 ### 2.2 Estrutura do Projeto Figma
 
 ```
-Fluxa v2.0
+fluxa v2.0
 │
 ├─ 📱 01 - Login
 │  ├─ Desktop (1440px)
@@ -218,7 +218,7 @@ Button Text
 
 **Passo 4: Logo e Título**
 1. Text tool → Clique no card
-2. Digite: "🏢 FLUXA"
+2. Digite: "🏢 fluxa"
 3. Apply typography: Heading 1
 4. Centralize no card
 

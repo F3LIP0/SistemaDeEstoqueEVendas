@@ -322,7 +322,7 @@ CORS ............................ Configurado
 
 ## ✨ Conclusão
 
-**O Fluxa v2.0 está 100% completo para produção no escopo WEB.**
+**O fluxa v2.0 está 100% completo para produção no escopo WEB.**
 
 Todos os requisitos do Projeto Integrador Final foram atendidos:
 - ✅ Funcionalidade completa

@@ -71,16 +71,17 @@
 #### RF-06: Atualizar Usuário (ADMIN)
 - **Descrição**: Atualizar dados de um usuário
 - **Endpoint**: PUT /api/usuarios/:id
-- **Campos atualizáveis**: nome, email, usuario, role_id
+- **Campos atualizáveis**: full_name, email, username, role_name, avatar_url, is_active, senha (opcional)
 - **Validações**: Email e usuario únicos
 - **Resposta**: Usuário atualizado
 - **Prioridade**: ALTA
 
-#### RF-07: Deletar Usuário (ADMIN)
-- **Descrição**: Remover usuário do sistema
+#### RF-07: Inativar/Excluir Usuário (ADMIN)
+- **Descrição**: Inativar usuário via update de status e, quando necessário, excluir usuário
+- **Endpoint principal**: PUT /api/usuarios/:id (is_active)
 - **Endpoint**: DELETE /api/usuarios/:id
 - **Validações**: Não pode deletar último admin
-- **Resposta**: Confirmação de deleção
+- **Resposta**: Confirmação de atualização ou deleção
 - **Prioridade**: MÉDIA
 
 ---
@@ -89,7 +90,7 @@
 
 #### RF-08: Criar Produto (MANAGER+)
 - **Descrição**: Cadastrar novo produto no catálogo
-- **Endpoint**: POST /api/productos
+- **Endpoint**: POST /api/produtos
 - **Campos obrigatórios**: 
   - sku (único)
   - nome
@@ -112,7 +113,7 @@
 
 #### RF-09: Listar Produtos (TODOS)
 - **Descrição**: Visualizar catálogo de produtos
-- **Endpoint**: GET /api/productos
+- **Endpoint**: GET /api/produtos
 - **Parâmetros**: page, limit, categoria_id (opcional)
 - **Resposta**: Array de produtos + paginação
 - **Campos retornados**: id, sku, nome, categoria, marca, preco_venda, estoque_atual
@@ -120,13 +121,13 @@
 
 #### RF-10: Buscar Produto por ID (TODOS)
 - **Descrição**: Obter detalhes completos de um produto
-- **Endpoint**: GET /api/productos/:id
+- **Endpoint**: GET /api/produtos/:id
 - **Resposta**: Objeto com todos os dados do produto
 - **Prioridade**: ALTA
 
 #### RF-11: Atualizar Produto (MANAGER+)
 - **Descrição**: Modificar dados de um produto existente
-- **Endpoint**: PUT /api/productos/:id
+- **Endpoint**: PUT /api/produtos/:id
 - **Campos atualizáveis**: nome, preco_custo, preco_venda, estoque_minimo, estoque_maximo, ativo
 - **Validações**: Mesmas de criação
 - **Resposta**: Produto atualizado
@@ -134,8 +135,8 @@
 
 #### RF-12: Deletar Produto (ADMIN)
 - **Descrição**: Remover produto do catálogo
-- **Endpoint**: DELETE /api/productos/:id
-- **Restrições**: Apenas soft-delete (marcar como inativo)
+- **Endpoint**: DELETE /api/produtos/:id
+- **Restrições**: Exclusão permitida apenas para ADMIN
 - **Prioridade**: MÉDIA
 
 ---
@@ -221,30 +222,32 @@
 
 #### RF-21: Registrar Entrada de Ponto (EMPLOYEE)
 - **Descrição**: Funcionário registra sua entrada
-- **Endpoint**: POST /api/ponto/entrada
+- **Endpoint**: POST /api/ponto
 - **Dados**: Automático (user_id, timestamp, local via IP)
+- **Payload**: { tipo: "entrada" }
 - **Validações**: Máximo 1 entrada por dia por usuário
 - **Prioridade**: ALTA
 
 #### RF-22: Registrar Saída de Ponto (EMPLOYEE)
 - **Descrição**: Funcionário registra sua saída
-- **Endpoint**: POST /api/ponto/saida
+- **Endpoint**: POST /api/ponto
 - **Dados**: Automático (user_id, timestamp)
+- **Payload**: { tipo: "saida" }
 - **Validações**: Deve haver entrada no mesmo dia
 - **Prioridade**: ALTA
 
 #### RF-23: Visualizar Ponto (EMPLOYEE)
 - **Descrição**: Funcionário visualiza seu histórico de ponto
-- **Endpoint**: GET /api/ponto/meu-ponto
-- **Parâmetros**: mes, ano
+- **Endpoint**: GET /api/ponto
+- **Parâmetros**: data (opcional, formato YYYY-MM-DD)
 - **Resposta**: Array com entrada/saída, total de horas trabalhadas
 - **Prioridade**: MÉDIA
 
 #### RF-24: Relatório de Ponto (MANAGER+)
 - **Descrição**: Gerente visualiza ponto de todos os funcionários
 - **Endpoint**: GET /api/ponto
-- **Parâmetros**: usuario_id, data_inicio, data_fim
-- **Resposta**: Relatório com faltas, atrasos, horas extras
+- **Parâmetros**: data (opcional, formato YYYY-MM-DD)
+- **Resposta**: Lista consolidada por usuário com registros do dia consultado
 - **Prioridade**: MÉDIA
 
 ---
@@ -253,7 +256,7 @@
 
 #### RF-25: Dashboard Principal (TODOS)
 - **Descrição**: Exibir visão geral do negócio com estatísticas
-- **Endpoint**: GET /api/dashboard
+- **Endpoint**: GET /api/dashboard/estatisticas
 - **Métricas**:
   - Total de vendas (mês atual)
   - Faturamento (mês atual)

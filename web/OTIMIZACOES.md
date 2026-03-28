@@ -1,4 +1,4 @@
-# 🚀 OTIMIZAÇÕES REALIZADAS - Fluxa
+# 🚀 OTIMIZAÇÕES REALIZADAS - fluxa
 
 **Data:** 12 de Janeiro de 2026  
 **Branch:** bomba  

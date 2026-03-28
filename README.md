@@ -1,13 +1,21 @@
-# Fluxa
+# fluxa
 
-Sistema de gestao com modulos Web e Android para estoque e vendas.
+Sistema de gestão de estoque e vendas com dois módulos:
 
-## Estrutura do Repositorio
+- Web: backend Node.js + frontend HTML/CSS/JS
+- Android: app React Native (Expo)
 
-- `web/`: aplicacao web (backend Node.js + frontend HTML)
-- `android/`: aplicacao mobile (React Native)
+## Estrutura
 
-## Como Executar
+- `web/`: API, interface web e scripts de teste
+- `android/`: aplicativo mobile
+
+## Requisitos
+
+- Node.js 18+
+- npm
+
+## Execução Rápida
 
 ### Web
 
@@ -17,10 +25,10 @@ npm install
 npm run start:all
 ```
 
-Links locais:
+Endpoints locais:
 
 - Frontend: `http://localhost:8080`
-- Backend: `http://localhost:3000`
+- Backend/API: `http://localhost:3000`
 
 ### Android
 
@@ -30,9 +38,37 @@ npm install
 npm start
 ```
 
-## Documentacao
+## Testes
 
-- Guia principal Web: `web/README.md`
+### Web
+
+```bash
+cd web
+npm test
+```
+
+Observação: os testes web dependem do backend ativo em `http://localhost:3000`.
+
+### Android
+
+```bash
+cd android
+npm test
+npm run typecheck
+```
+
+## Documentação
+
+### Web
+
+- Guia principal: `web/README.md`
 - Arquitetura: `web/docs/ARQUITETURA.md`
 - Requisitos: `web/docs/REQUISITOS.md`
-- Swagger API: `web/docs/SWAGGER-API.md`
+- API: `web/docs/SWAGGER-API.md`
+
+### Android
+
+- Guia inicial: `android/START.md`
+- Resumo geral: `android/00-START-HERE.md`
+- Arquitetura: `android/ARCHITECTURE.md`
+- Deploy: `android/DEPLOYMENT.md`

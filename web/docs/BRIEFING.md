@@ -1,4 +1,4 @@
-# 📋 BRIEFING - FLUXA
+# 📋 BRIEFING - fluxa
 
 ## 1. Identificação do Projeto
 
