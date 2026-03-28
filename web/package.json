@@ -1,7 +1,7 @@
 {
   "name": "fluxa-web",
   "version": "2.0.0",
-  "description": "Fluxa web: gerenciamento de estoque, vendas e controle operacional com PostgreSQL",
+  "description": "fluxa web: gerenciamento de estoque, vendas e controle operacional com PostgreSQL",
   "main": "backend.js",
   "scripts": {
     "start": "node backend.js",
@@ -10,6 +10,11 @@
     "start:all": "sh -c 'node backend.js & node frontend-server.js'",
     "dev": "nodemon backend.js",
     "test": "node test-complete-endpoints.js",
+    "test:fluxo": "node test-fluxo-completo.js",
+    "test:sistema": "node test-sistema-completo.js",
+    "test:all": "node scripts/test-all.js",
+    "test:all:raw": "npm run test && npm run test:fluxo && npm run test:sistema",
+    "health": "node -e \"fetch('http://localhost:3000/api/health').then(async r=>{console.log(r.status, await r.text()); process.exit(r.ok?0:1);}).catch(e=>{console.error(e.message); process.exit(1);});\"",
     "create-admin": "node create-admin.js"
   },
   "keywords": [
