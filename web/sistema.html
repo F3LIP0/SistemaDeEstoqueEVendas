@@ -1,0 +1,3601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="fluxa - sistema de gerenciamento de estoque e vendas">
+    <meta name="author" content="fluxa">
+    <title>fluxa</title>
+    <link rel="icon" href="data:,">
+    
+    <!-- Ícones Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --purple-900: #2a1146;
+            --purple-800: #3b1a64;
+            --purple-700: #51258a;
+            --purple-600: #6d28d9;
+            --purple-500: #8b5cf6;
+            --purple-400: #a78bfa;
+            --sidebar-text-offset: 15px;
+            --sidebar-brand-top-offset: 14px;
+        }
+        /* ============================================ */
+        /* RESET & BASE STYLES */
+        /* ============================================ */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f7fa; 
+            color: #333;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        /* Modo escuro básico */
+        body.dark { background: #140b24; color: #efe9ff; }
+        body.dark .login-container { background: linear-gradient(135deg, #1a1030 0%, #2a1146 55%, #3b1a64 100%); }
+        body.dark .login-card { background: #22123a; color: #efe9ff; }
+        body.dark .login-card h1 { color: #f3edff; }
+        body.dark .login-card .subtitle { color: #c4b5fd; }
+        body.dark .input-group input { background: #180c2b; border-color: #4c1d95; color: #efe9ff; }
+        body.dark .input-group input:focus { border-color: var(--purple-500); }
+        body.dark .sidebar { background: linear-gradient(180deg, #1a1030 0%, #160d28 100%); color: #f3edff; }
+        body.dark .content { background: transparent; }
+        body.dark .card, body.dark .login-card { box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        body.dark .btn, body.dark .btn-primary { filter: brightness(0.95); }
+        body.dark table { color: #efe9ff; }
+        body.dark .modal .modal-content { background: #180c2b; color: #efe9ff; }
+        body.dark .modal .modal-header h3 { color: #f3edff; }
+        body.dark .stat-card { background: #22123a; color: #efe9ff; box-shadow: 0 4px 20px rgba(8,3,18,0.55); border-left-color: #8b5cf6; }
+        body.dark .stat-value { color: #f3edff; }
+        body.dark .stat-change { color: #c4b5fd; }
+        body.dark .stat-card:nth-child(1),
+        body.dark .stat-card:nth-child(2),
+        body.dark .stat-card:nth-child(3),
+        body.dark .stat-card:nth-child(4) { border-left-color: #8b5cf6; }
+        body.dark .chart-container { background: #22123a; color: #efe9ff; box-shadow: 0 4px 20px rgba(8,3,18,0.55); }
+        body.dark .table-container { background: #22123a; color: #efe9ff; box-shadow: 0 4px 20px rgba(8,3,18,0.55); }
+        body.dark .chart-container h3 { color: #f3edff; }
+        body.dark th { background: #180c2b; color: #efe9ff; border-bottom-color: #4c1d95; }
+        body.dark td { border-bottom-color: #4c1d95; }
+        body.dark tr:hover { background: #261046; }
+        body.dark .top-bar { background: #22123a; color: #efe9ff; box-shadow: 0 4px 20px rgba(8,3,18,0.55); }
+        body.dark .top-bar h2 { color: #f3edff; }
+        #modalConfirmacao .modal-header { border-bottom: 1px solid #e2e8f0; }
+        #modalConfirmacao h3, #confirmMensagem { color: #1f2937; }
+        #modalConfirmacao .modal-close { color: #64748b; }
+        body.dark #modalConfirmacao .modal-header { border-bottom: 1px solid #4c1d95; }
+        body.dark #modalConfirmacao h3, body.dark #confirmMensagem { color: #efe9ff; }
+        body.dark #modalConfirmacao .modal-close { color: #ddd6fe; }
+        #modalErro .modal-header { border-bottom: 1px solid #e2e8f0; }
+        #modalErro h3, #erroMensagem { color: #1f2937; }
+        #modalErro .modal-close { color: #64748b; }
+        body.dark #modalErro .modal-header { border-bottom: 1px solid #4c1d95; }
+        body.dark #modalErro h3, body.dark #erroMensagem { color: #efe9ff; }
+        body.dark #modalErro .modal-close { color: #ddd6fe; }
+        
+        /* Botão de tema */
+        .theme-toggle { position: fixed; top: 16px; right: 16px; z-index: 9999; background: var(--purple-800); color: #efe9ff; border: none; padding: 10px 12px; border-radius: 999px; cursor: pointer; box-shadow: 0 8px 24px rgba(18,6,32,0.45); }
+        .theme-toggle i { font-size: 16px; }
+        
+        /* ============================================ */
+        /* LOGIN PAGE */
+        /* ============================================ */
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--purple-700) 0%, var(--purple-500) 100%);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        .login-card h1 { 
+            color: #2d3748; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        
+        .login-card .subtitle { 
+            color: #718096; 
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group { 
+            margin-bottom: 20px; 
+            text-align: left;
+        }
+        
+        .input-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--purple-500);
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, var(--purple-600), var(--purple-500));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn-login:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .btn-login:active { 
+            transform: translateY(0); 
+        }
+        
+        .login-error {
+            color: #f56565;
+            margin-top: 15px;
+            padding: 10px;
+            background: #fed7d7;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        /* ============================================ */
+        /* DASHBOARD LAYOUT */
+        /* ============================================ */
+        .dashboard { 
+            display: none; 
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, var(--purple-900) 0%, #1b1230 100%);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding: 20px;
+        }
+        
+        .logo { 
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            margin-top: var(--sidebar-brand-top-offset);
+            margin-bottom: 24px;
+            color: #fff;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            padding-left: var(--sidebar-text-offset);
+        }
+        
+        .logo span { color: var(--purple-400); }
+
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+        }
+
+        .nav-section-label {
+            margin: 14px 0 6px;
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #c4b5fd;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sidebar nav .nav-section-label:first-child {
+            margin-top: 2px;
+        }
+
+        .nav-section-label::after {
+            display: none;
+        }
+
+        .nav-section-label i {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: #cbd5e0;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: rgba(167, 139, 250, 0.22);
+            color: white;
+        }
+        
+        .nav-item i { margin-right: 12px; width: 20px; }
+
+        .nav-item.logout-item {
+            margin-top: auto;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .top-bar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--purple-600), var(--purple-500));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        /* ============================================ */
+        /* STATS CARDS */
+        /* ============================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border-left: 5px solid;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); }
+        
+        .stat-card:nth-child(1) { border-color: #48bb78; }
+        .stat-card:nth-child(2) { border-color: #ed8936; }
+        .stat-card:nth-child(3) { border-color: #4299e1; }
+        .stat-card:nth-child(4) { border-color: #9f7aea; }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #2d3748;
+        }
+        
+        .stat-change {
+            color: #48bb78;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* ============================================ */
+        /* CHARTS */
+        /* ============================================ */
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        .chart-container h3 {
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+        
+        /* ============================================ */
+        /* TABLES */
+        /* ============================================ */
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        body.compact th, body.compact td { padding: 8px; }
+        
+        th { 
+            color: #4a5568; 
+            font-weight: 600;
+            background: #f7fafc;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f7fafc;
+            transition: background 0.2s;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 12px 16px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            font-size: 14px;
+            min-width: 220px;
+        }
+
+        .toast-success { border-left: 4px solid #48bb78; }
+        .toast-error { border-left: 4px solid #f56565; }
+        
+        /* ============================================ */
+        /* BADGES */
+        /* ============================================ */
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .badge-success { background: #c6f6d5; color: #22543d; }
+        .badge-warning { background: #feebc8; color: #744210; }
+        .badge-danger { background: #fed7d7; color: #742a2a; }
+        
+        /* ============================================ */
+        /* PAGE MANAGEMENT */
+        /* ============================================ */
+        .page { 
+            display: none; 
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .page.active { 
+            display: block; 
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ============================================ */
+        /* FORMS */
+        /* ============================================ */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--purple-500);
+        }
+        
+        /* ============================================ */
+        /* BUTTONS */
+        /* ============================================ */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, var(--purple-600), var(--purple-500));
+            color: white;
+        }
+        
+        .btn-primary:hover { 
+            background: linear-gradient(to right, #5a67d8, #6b42a0);
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        /* ============================================ */
+        /* MODALS */
+        /* ============================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #718096;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        /* ============================================ */
+        /* RESPONSIVE DESIGN */
+        /* ============================================ */
+        @media (max-width: 768px) {
+            .sidebar { 
+                width: 70px; 
+            }
+
+            .logo {
+                padding-left: 0;
+                justify-content: center;
+                font-size: 22px;
+            }
+            
+            .sidebar .nav-text { 
+                display: none; 
+            }
+
+            .nav-section-label {
+                display: flex;
+                justify-content: center;
+                margin: 8px 0 6px;
+                padding: 0;
+                font-size: 0;
+                color: #ddd6fe;
+            }
+
+            .nav-section-label i {
+                display: none;
+            }
+
+            .nav-section-label::after {
+                display: inline;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            
+            .main-content { 
+                margin-left: 70px; 
+            }
+            
+            .stats-grid { 
+                grid-template-columns: 1fr; 
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* ============================================ */
+        /* UTILITY CLASSES */
+        /* ============================================ */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-gap { gap: 10px; }
+        .flex-between { justify-content: space-between; }
+        .flex-center { justify-content: center; align-items: center; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" title="Alternar tema" onclick="alternarTema()"><i class="fas fa-moon"></i></button>
+    <!-- =========================================== -->
+    <!-- TELA DE LOGIN -->
+    <!-- =========================================== -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <h1>Acesso ao fluxa</h1>
+            <p class="subtitle">Entre com suas credenciais</p>
+            
+            <div class="input-group">
+                <label>E-mail ou Usuário</label>
+                <input type="text" id="email" placeholder="seu@email.com">
+            </div>
+            
+            <div class="input-group">
+                <label>Senha</label>
+                <input type="password" id="senha" placeholder="......">
+            </div>
+            
+            <button class="btn-login" onclick="login()">Entrar</button>
+            
+            <p style="margin-top: 20px; color: #a0aec0; font-size: 14px;">
+                fluxa © 2025
+            </p>
+            
+            <div id="loginError" class="login-error">
+                Credenciais inválidas! Verifique seu email e senha.
+            </div>
+        </div>
+    </div>
+    
+    <!-- =========================================== -->
+    <!-- DASHBOARD PRINCIPAL -->
+    <!-- =========================================== -->
+    <div id="dashboard" class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">fluxa</div>
+            
+            <nav>
+                <div class="nav-section-label" data-min-role="1" data-short="Op"><i class="fas fa-bolt"></i> Operação</div>
+                <a href="#dashboard" class="nav-item active" onclick="mostrarPagina('dashboard')" data-min-role="1">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                
+                <a href="#produtos" class="nav-item" onclick="mostrarPagina('produtos')" data-min-role="1">
+                    <i class="fas fa-box"></i>
+                    <span class="nav-text">Produtos</span>
+                </a>
+                
+                <a href="#vendas" class="nav-item" onclick="mostrarPagina('vendas')" data-min-role="1">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="nav-text">Vendas</span>
+                </a>
+                
+                <a href="#estoque" class="nav-item" onclick="mostrarPagina('estoque')" data-min-role="1">
+                    <i class="fas fa-warehouse"></i>
+                    <span class="nav-text">Estoque</span>
+                </a>
+
+                <a href="#ponto" class="nav-item" onclick="mostrarPagina('ponto')" data-min-role="1">
+                    <i class="fas fa-clock"></i>
+                    <span class="nav-text">Ponto</span>
+                </a>
+
+                <div class="nav-section-label" data-min-role="2" data-short="Ge"><i class="fas fa-briefcase"></i> Gestão</div>
+                
+                <a href="#cadastros" class="nav-item" onclick="mostrarPagina('cadastros')" data-min-role="2">
+                    <i class="fas fa-layer-group"></i>
+                    <span class="nav-text">Cadastros</span>
+                </a>
+
+                <div class="nav-section-label" data-min-role="3" data-short="Ad"><i class="fas fa-shield-alt"></i> Admin</div>
+
+                <a href="#usuarios" class="nav-item" onclick="mostrarPagina('usuarios')" data-min-role="3">
+                    <i class="fas fa-users"></i>
+                    <span class="nav-text">Usuários</span>
+                </a>
+
+                <a href="#config" class="nav-item" onclick="mostrarPagina('config')" data-min-role="3">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-text">Configurações</span>
+                </a>
+
+                <a href="#auditoria" class="nav-item" onclick="mostrarPagina('auditoria')" data-min-role="3">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span class="nav-text">Auditoria</span>
+                </a>
+
+                <a href="#" class="nav-item logout-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="nav-text">Sair</span>
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Conteúdo Principal -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h2 id="pageTitle">Dashboard</h2>
+                <div class="user-info">
+                    <div class="user-avatar" id="avatar">
+                        <img id="avatarImage" alt="Foto do usuário">
+                        <span id="avatarFallback">AD</span>
+                    </div>
+                    <div>
+                        <div id="userName">Administrador</div>
+                        <small id="userType" style="color: #718096;">Administrador</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: DASHBOARD -->
+            <!-- =========================================== -->
+            <div id="pageDashboard" class="page active">
+                <h3>Visão Geral</h3>
+                <p style="color: #718096; margin-bottom: 30px;">Acompanhe o desempenho do seu negócio</p>
+                
+                <!-- Cards de Estatísticas -->
+                <div class="stats-grid" id="statsCards">
+                    <!-- JavaScript preenche aqui -->
+                </div>
+                
+                <!-- Gráfico -->
+                <div class="chart-container">
+                    <h3>Vendas dos Últimos 7 Dias</h3>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                
+                <!-- Tabelas -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Últimas Vendas -->
+                    <div class="table-container">
+                        <h3>Últimas Vendas</h3>
+                        <table id="recentSales">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JavaScript preenche -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Produtos Baixo Estoque -->
+                    <div class="table-container">
+                        <h3>Alertas de Estoque</h3>
+                        <table id="lowStock">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Estoque</th>
+                                    <th>Mínimo</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JavaScript preenche -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: PRODUTOS -->
+            <!-- =========================================== -->
+            <div id="pageProdutos" class="page" data-min-role="1">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <h3>Gestão de Produtos</h3>
+                    <button class="btn btn-primary" onclick="abrirModalProduto()" data-min-role="2">
+                        <i class="fas fa-plus"></i> Novo Produto
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabelaProdutos">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Preço Venda</th>
+                                <th>Estoque</th>
+                                <th>Categoria</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: VENDAS -->
+
+            <!-- =========================================== -->
+            <!-- PÁGINA: CADASTROS -->
+            <!-- =========================================== -->
+            <div id="pageCadastros" class="page" data-min-role="2">
+                <h3>Cadastros Auxiliares</h3>
+
+                <div class="table-container">
+                    <h4>Categorias</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" id="catNome" placeholder="Ex: Eletrônicos">
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" id="catDescricao" placeholder="Opcional">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: end;">
+                            <button class="btn btn-primary" onclick="criarCategoria()">Adicionar</button>
+                        </div>
+                    </div>
+                    <table id="tabelaCategorias">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="table-container">
+                    <h4>Marcas</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" id="marcaNome" placeholder="Ex: Premium">
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" id="marcaDescricao" placeholder="Opcional">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: end;">
+                            <button class="btn btn-primary" onclick="criarMarca()">Adicionar</button>
+                        </div>
+                    </div>
+                    <table id="tabelaMarcas">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="table-container">
+                    <h4>Unidades</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" id="unidadeNome" placeholder="Ex: Quilograma">
+                        </div>
+                        <div class="form-group">
+                            <label>Abreviação</label>
+                            <input type="text" id="unidadeAbrev" placeholder="Ex: kg">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: end;">
+                            <button class="btn btn-primary" onclick="criarUnidade()">Adicionar</button>
+                        </div>
+                    </div>
+                    <table id="tabelaUnidades">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Abreviação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- =========================================== -->
+            <div id="pageVendas" class="page" data-min-role="1">
+                <h3>Vendas</h3>
+                <div class="table-container">
+                    <table id="tabelaVendas">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Pagamento</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: ESTOQUE -->
+            <!-- =========================================== -->
+            <div id="pageEstoque" class="page" data-min-role="1">
+                <h3>Estoque</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="abrirModalMovimentacao('IN')">
+                        <i class="fas fa-plus-circle"></i> Entrada
+                    </button>
+                    <button class="btn" style="background: #f56565; color: white;" onclick="abrirModalMovimentacao('OUT')">
+                        <i class="fas fa-minus-circle"></i> Saída
+                    </button>
+                    <button class="btn" style="background: #ed8936; color: white;" onclick="abrirModalMovimentacao('ADJUSTMENT')">
+                        <i class="fas fa-exchange-alt"></i> Ajuste
+                    </button>
+                    <button class="btn" style="background: #48bb78; color: white;" onclick="carregarDadosEstoque()">
+                        <i class="fas fa-sync-alt"></i> Atualizar
+                    </button>
+                </div>
+
+                <div class="table-container" style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px;">Saldo Atual de Itens</h4>
+                    <table id="tabelaSaldoEstoque">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>SKU</th>
+                                <th>Estoque Atual</th>
+                                <th>Mínimo</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 30px; color: #a0aec0;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 20px;"></i>
+                                    <p style="margin-top: 8px;">Carregando saldo de estoque...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="table-container">
+                    <h4 style="margin-bottom: 12px;">Histórico de Movimentações</h4>
+                    <table id="tabelaMovimentacoes">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Produto</th>
+                                <th>SKU</th>
+                                <th>Tipo</th>
+                                <th>Quantidade</th>
+                                <th>Responsável</th>
+                                <th>Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #cbd5e0;"></i>
+                                    <p style="margin-top: 10px; color: #a0aec0;">Carregando movimentações...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: PONTO -->
+            <!-- =========================================== -->
+            <div id="pagePonto" class="page" data-min-role="1">
+                <h3>Controle de Ponto</h3>
+                <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+                    <button class="btn btn-primary" onclick="registrarPonto('entrada')">
+                        <i class="fas fa-sign-in-alt"></i> Registrar Entrada
+                    </button>
+                    <button class="btn" style="background: #ed8936; color: white;" onclick="registrarPonto('saida')">
+                        <i class="fas fa-sign-out-alt"></i> Registrar Saída
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabelaPonto">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Entrada</th>
+                                <th>Saída</th>
+                                <th>Horas</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- =========================================== -->
+            <!-- PÁGINA: CONFIGURAÇÕES -->
+            <!-- =========================================== -->
+            <div id="pageConfig" class="page" data-min-role="3">
+                <h3>Configurações do Sistema</h3>
+                <div class="table-container">
+                    <h4>Preferências</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cfgNotificacoes">
+                                Ativar notificações
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cfgCompacto">
+                                Tabelas compactas
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Página inicial</label>
+                            <select id="cfgPaginaInicial">
+                                <option value="dashboard">Dashboard</option>
+                                <option value="produtos">Produtos</option>
+                                <option value="vendas">Vendas</option>
+                                <option value="estoque">Estoque</option>
+                                <option value="ponto">Ponto</option>
+                                <option value="usuarios">Usuários</option>
+                                <option value="config">Configurações</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Autoatualizar dashboard</label>
+                            <select id="cfgAutoRefresh">
+                                <option value="0">Desativado</option>
+                                <option value="2">A cada 2 min</option>
+                                <option value="5">A cada 5 min</option>
+                                <option value="10">A cada 10 min</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tema padrão</label>
+                            <select id="cfgTema">
+                                <option value="light">Claro</option>
+                                <option value="dark">Escuro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="salvarConfiguracoes()">Salvar Preferências</button>
+                    </div>
+                </div>
+                <div class="table-container" style="margin-top: 20px;">
+                    <h4>Configurações Globais</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome da empresa</label>
+                            <input type="text" id="cfgEmpresa" placeholder="Minha Empresa">
+                        </div>
+                        <div class="form-group">
+                            <label>Moeda</label>
+                            <input type="text" id="cfgMoeda" placeholder="BRL">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Taxa de imposto padrão (%)</label>
+                            <input type="number" id="cfgImposto" placeholder="0" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Estoque mínimo padrão</label>
+                            <input type="number" id="cfgEstoqueMin" placeholder="10" min="0">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="salvarConfiguracoesSistema()">Salvar Configurações Globais</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =========================================== -->
+            <!-- PÁGINA: AUDITORIA -->
+            <!-- =========================================== -->
+            <div id="pageAuditoria" class="page" data-min-role="3">
+                <h3>Auditoria do Sistema</h3>
+                <div class="table-container">
+                    <table id="tabelaAuditoria">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Usuário</th>
+                                <th>Ação</th>
+                                <th>Recurso</th>
+                                <th>ID</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- =========================================== -->
+            <!-- PÁGINA: USUÁRIOS -->
+            <!-- =========================================== -->
+            <div id="pageUsuarios" class="page" data-min-role="3">
+                <h3>Usuários do Sistema</h3>
+                <div class="table-container">
+                    <button class="btn btn-primary" onclick="abrirModalUsuario()" style="margin-bottom: 20px;" data-min-role="3">
+                        <i class="fas fa-user-plus"></i> Novo Usuário
+                    </button>
+                    <label style="display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; color: #64748b;">
+                        Status:
+                        <select id="usuariosFiltroStatus" onchange="onFiltroStatusUsuariosChange()" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #cbd5e0; font-weight: 600;">
+                            <option value="ativos" selected>Ativos (0)</option>
+                            <option value="todos">Todos (0)</option>
+                            <option value="inativos">Inativos (0)</option>
+                        </select>
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; color: #64748b;">
+                        Buscar:
+                        <input
+                            type="text"
+                            id="usuariosBusca"
+                            oninput="onBuscarUsuariosInput()"
+                            placeholder="Nome, email ou usuário"
+                            style="padding: 6px 10px; border-radius: 8px; border: 1px solid #cbd5e0; min-width: 220px;"
+                        >
+                        <button id="usuariosBuscaLimpar" class="btn btn-secondary" type="button" onclick="limparBuscaUsuarios()" style="padding: 6px 10px; font-size: 12px; display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </label>
+                    <table id="tabelaUsuarios">
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Usuário</th>
+                                <th>Tipo</th>
+                                <th>Criado em</th>
+                                <th>Último login</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JavaScript preenche -->
+                        </tbody>
+                    </table>
+                    <div id="usuariosPaginacao" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; color: #64748b; font-size: 13px;">
+                        <div style="display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span id="usuariosPaginacaoInfo">0 usuários</span>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; color: #64748b;">
+                                Itens por página:
+                                <select id="usuariosPageSize" onchange="alterarUsuariosPorPagina()" style="padding: 4px 8px; border-radius: 8px; border: 1px solid #cbd5e0;">
+                                    <option value="8">8</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div style="display: inline-flex; gap: 8px;">
+                            <button class="btn btn-secondary" id="usuariosPrevBtn" type="button" onclick="mudarPaginaUsuarios(-1)" style="padding: 6px 10px; font-size: 12px;">Anterior</button>
+                            <button class="btn btn-secondary" id="usuariosNextBtn" type="button" onclick="mudarPaginaUsuarios(1)" style="padding: 6px 10px; font-size: 12px;">Próxima</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- =========================================== -->
+    <!-- MODAIS (Pop-ups) -->
+    <!-- =========================================== -->
+    
+    <!-- Modal Novo Produto -->
+    <div id="modalProduto" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Produto</h3>
+                <button class="modal-close" onclick="fecharModal('modalProduto')">&times;</button>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código (SKU)</label>
+                    <input type="text" id="prodCodigo" placeholder="Ex: PROD001" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Nome do Produto</label>
+                    <input type="text" id="prodNome" placeholder="Nome completo" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <input type="text" id="prodCategoria" placeholder="Ex: Eletrônicos">
+                </div>
+                
+                <div class="form-group">
+                    <label>Preço de Custo (R$)</label>
+                    <input type="number" id="prodPrecoCusto" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Preço de Venda (R$)</label>
+                    <input type="number" id="prodPrecoVenda" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Estoque Inicial</label>
+                    <input type="number" id="prodEstoque" placeholder="0" min="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Estoque Mínimo</label>
+                <input type="number" id="prodEstoqueMin" placeholder="10" value="10" min="0">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarProduto()">
+                    <i class="fas fa-save"></i> Salvar Produto
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Novo Usuário -->
+    <div id="modalUsuario" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalUsuarioTitulo">Novo Usuário</h3>
+                <button class="modal-close" onclick="fecharModal('modalUsuario')">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Nome Completo</label>
+                <input type="text" id="userNome" placeholder="Nome completo" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="userEmail" placeholder="usuario@empresa.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="userSenha" placeholder="Senha forte" required>
+            </div>
+
+            <div class="form-group" id="userAlterarSenhaContainer" style="display: none;">
+                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="userAlterarSenha" onchange="alternarCampoSenhaUsuario()">
+                    Alterar senha neste usuário
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>URL da Foto (opcional)</label>
+                <input type="url" id="userAvatarUrl" placeholder="https://site.com/foto.jpg">
+            </div>
+            
+            <div class="form-group">
+                <label>Tipo de Usuário</label>
+                <select id="userTipo" required>
+                    <option value="funcionario">Funcionário</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="userAtivoContainer">
+                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="userAtivo" checked>
+                    Usuário ativo
+                </label>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modalUsuario')">Cancelar</button>
+                <button class="btn btn-primary" id="btnSalvarUsuario" onclick="salvarUsuario()">
+                    <i class="fas fa-user-plus"></i> Salvar Usuário
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Erro -->
+    <div id="modalErro" class="modal">
+        <div class="modal-content" style="max-width: 500px; border-left: 4px solid #f56565;">
+            <div class="modal-header" style="background: transparent;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #f56565; color: white; font-size: 14px;">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                    Erro
+                </h3>
+                <button class="modal-close" onclick="fecharModal('modalErro')">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <p id="erroMensagem" style="margin: 0;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="fecharModal('modalErro')" style="width: 100%;">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="modalConfirmacao" class="modal">
+        <div class="modal-content" style="max-width: 520px; border-left: 4px solid #4299e1;">
+            <div class="modal-header" style="background: transparent;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #4299e1; color: white; font-size: 14px;">
+                        <i class="fas fa-question"></i>
+                    </span>
+                    Confirmar
+                </h3>
+                <button class="modal-close" onclick="fecharModal('modalConfirmacao')">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <p id="confirmMensagem" style="margin: 0;"></p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="fecharModal('modalConfirmacao')" style="width: 100%;">Cancelar</button>
+                <button class="btn btn-primary" id="confirmBtn" style="width: 100%;">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Movimentação de Estoque -->
+    <div id="modalMovimentacao" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloMovimentacao">Nova Movimentação</h3>
+                <button class="modal-close" onclick="fecharModal('modalMovimentacao')">&times;</button>
+            </div>
+            
+            <input type="hidden" id="movTipo">
+            
+            <div class="form-group">
+                <label>Produto *</label>
+                <select id="movProduto" required>
+                    <option value="">Selecione o produto...</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Quantidade *</label>
+                <input type="number" id="movQuantidade" placeholder="Digite a quantidade" min="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Tipo de Referência</label>
+                <select id="movReferenciaTipo">
+                    <option value="">Usar tipo da movimentação</option>
+                    <option value="IN">Entrada</option>
+                    <option value="OUT">Saída</option>
+                    <option value="ADJUSTMENT">Ajuste</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>ID de Referência</label>
+                <input type="number" id="movReferenciaId" placeholder="Automático se vazio">
+            </div>
+            
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="movNotas" rows="3" placeholder="Informações adicionais sobre esta movimentação..."></textarea>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modalMovimentacao')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarMovimentacao()">
+                    <i class="fas fa-save"></i> Salvar Movimentação
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- =========================================== -->
+    <!-- JAVASCRIPT DO SISTEMA -->
+    <!-- =========================================== -->
+    <script>
+        'use strict';
+        
+        // ============================================
+        // CONFIGURAÇÕES E VARIÁVEIS GLOBAIS
+        // ============================================
+        
+        const CONFIG = {
+            API_URL: '/api', // URL relativa - funciona em qualquer ambiente (localhost, Codespaces, produção)
+            STORAGE_KEYS: {
+                TOKEN: 'token',
+                USUARIO: 'usuario',
+                USUARIOS_BUSCA: 'usuarios_busca',
+                USUARIOS_PAGE_SIZE: 'usuarios_page_size',
+                USUARIOS_STATUS: 'usuarios_status'
+            },
+            DEBUG: false // Habilitar apenas em desenvolvimento para ver console.logs
+        };
+        
+        let usuarioLogado = null;
+        let tokenJWT = null;
+        let graficoVendas = null;
+        let autoRefreshId = null;
+        let notificacoesAtivas = true;
+        const SETTINGS_KEY = 'se_config';
+        // Tema
+        function aplicarTemaInicial() {
+            const salvo = localStorage.getItem('se_tema') || 'light';
+            document.body.classList.toggle('dark', salvo === 'dark');
+        }
+        function alternarTema() {
+            const atualDark = document.body.classList.toggle('dark');
+            localStorage.setItem('se_tema', atualDark ? 'dark' : 'light');
+        }
+
+        function obterConfiguracoesPadrao() {
+            return {
+                notificacoes: true,
+                compacto: false,
+                paginaInicial: 'dashboard',
+                autoRefresh: 0,
+                tema: localStorage.getItem('se_tema') || 'light'
+            };
+        }
+
+        function carregarConfiguracoes() {
+            const raw = localStorage.getItem(SETTINGS_KEY);
+            const cfg = raw ? JSON.parse(raw) : obterConfiguracoesPadrao();
+            return { ...obterConfiguracoesPadrao(), ...cfg };
+        }
+
+        function aplicarConfiguracoes(cfg) {
+            const configuracoes = cfg || carregarConfiguracoes();
+            notificacoesAtivas = !!configuracoes.notificacoes;
+            document.body.classList.toggle('compact', !!configuracoes.compacto);
+
+            if (configuracoes.tema === 'dark') {
+                document.body.classList.add('dark');
+                localStorage.setItem('se_tema', 'dark');
+            } else {
+                document.body.classList.remove('dark');
+                localStorage.setItem('se_tema', 'light');
+            }
+
+            configurarAutoRefresh(parseInt(configuracoes.autoRefresh || 0, 10));
+        }
+
+        function configurarAutoRefresh(minutos) {
+            if (autoRefreshId) {
+                clearInterval(autoRefreshId);
+                autoRefreshId = null;
+            }
+            if (minutos > 0) {
+                autoRefreshId = setInterval(() => {
+                    carregarDashboard();
+                }, minutos * 60 * 1000);
+            }
+        }
+
+        function preencherFormularioConfiguracoes(cfg) {
+            const configuracoes = cfg || carregarConfiguracoes();
+            const chkNotif = document.getElementById('cfgNotificacoes');
+            const chkComp = document.getElementById('cfgCompacto');
+            const selPagina = document.getElementById('cfgPaginaInicial');
+            const selAuto = document.getElementById('cfgAutoRefresh');
+            const selTema = document.getElementById('cfgTema');
+
+            if (chkNotif) chkNotif.checked = !!configuracoes.notificacoes;
+            if (chkComp) chkComp.checked = !!configuracoes.compacto;
+            if (selPagina) selPagina.value = configuracoes.paginaInicial || 'dashboard';
+            if (selAuto) selAuto.value = String(configuracoes.autoRefresh || 0);
+            if (selTema) selTema.value = configuracoes.tema || 'light';
+        }
+
+        function salvarConfiguracoes() {
+            const cfg = {
+                notificacoes: !!document.getElementById('cfgNotificacoes')?.checked,
+                compacto: !!document.getElementById('cfgCompacto')?.checked,
+                paginaInicial: document.getElementById('cfgPaginaInicial')?.value || 'dashboard',
+                autoRefresh: parseInt(document.getElementById('cfgAutoRefresh')?.value || '0', 10),
+                tema: document.getElementById('cfgTema')?.value || 'light'
+            };
+
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(cfg));
+            aplicarConfiguracoes(cfg);
+            mostrarNotificacao('Preferencias salvas com sucesso!', 'success');
+        }
+        
+        /**
+         * Mostra tela de erro modal
+         */
+        function mostrarErro(mensagem) {
+            const erroEl = document.getElementById('erroMensagem');
+            if (erroEl) {
+                erroEl.textContent = mensagem || 'Erro desconhecido';
+            }
+            abrirModal('modalErro');
+        }
+
+        /**
+         * Mostra notificação de sucesso
+         */
+        function mostrarNotificacao(mensagem, tipo = 'success') {
+            if (!notificacoesAtivas) return;
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${tipo === 'error' ? 'error' : 'success'}`;
+            toast.textContent = mensagem;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function confirmarAcao(mensagem, onConfirm) {
+            const msgEl = document.getElementById('confirmMensagem');
+            const btnEl = document.getElementById('confirmBtn');
+            if (!msgEl || !btnEl) return;
+            msgEl.textContent = mensagem || 'Tem certeza?';
+
+            const novoBtn = btnEl.cloneNode(true);
+            btnEl.parentNode.replaceChild(novoBtn, btnEl);
+            novoBtn.addEventListener('click', () => {
+                fecharModal('modalConfirmacao');
+                if (typeof onConfirm === 'function') onConfirm();
+            });
+
+            abrirModal('modalConfirmacao');
+        }
+
+        async function apiJsonRequest(path, options = {}) {
+            const {
+                method = 'GET',
+                body,
+                auth = true,
+                timeoutMs = 15000
+            } = options;
+
+            const headers = {};
+            if (auth && tokenJWT) headers['Authorization'] = `Bearer ${tokenJWT}`;
+            if (body !== undefined) headers['Content-Type'] = 'application/json';
+
+            const controller = new AbortController();
+            const timerId = setTimeout(() => controller.abort(), timeoutMs);
+
+            let response;
+            try {
+                response = await fetch(`${CONFIG.API_URL}${path}`, {
+                    method,
+                    headers,
+                    signal: controller.signal,
+                    ...(body !== undefined ? { body: JSON.stringify(body) } : {})
+                });
+            } catch (erro) {
+                if (erro?.name === 'AbortError') {
+                    throw new Error('Tempo de resposta da API excedido. Tente novamente.');
+                }
+                throw new Error('Falha de conexão com a API. Verifique se o backend está ativo.');
+            } finally {
+                clearTimeout(timerId);
+            }
+
+            let data = {};
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = {};
+                }
+            } else {
+                try {
+                    const text = await response.text();
+                    data = text ? { mensagem: text } : {};
+                } catch (e) {
+                    data = {};
+                }
+            }
+
+            if (auth && response.status === 401) {
+                forcarLogout('Sessão expirada. Faça login novamente.');
+                return { response, data, sessionExpired: true };
+            }
+
+            return { response, data, sessionExpired: false };
+        }
+
+        function apiErrorMessage(data, fallback) {
+            return data?.mensagem || data?.detalhe || data?.erro || fallback;
+        }
+
+        aplicarConfiguracoes();
+        
+        // ============================================
+        // FUNÇÕES DE AUTENTICAÇÃO
+        // ============================================
+        
+        /**
+         * Realiza o login do usuário
+         */
+        async function login() {
+            const emailOrUsername = document.getElementById('email').value.trim();
+            const senha = document.getElementById('senha').value;
+            const btnLogin = document.querySelector('.btn-login');
+            const errorDiv = document.getElementById('loginError');
+            
+            // Validações básicas
+            if (!emailOrUsername || !senha) {
+                mostrarErroLogin('Preencha email/username e senha');
+                return;
+            }
+            
+            // Desabilita botão durante o login
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Entrando...';
+            errorDiv.style.display = 'none';
+            
+            try {
+                const { response: resposta, data: dados } = await apiJsonRequest('/login', {
+                    method: 'POST',
+                    auth: false,
+                    body: {
+                        email: emailOrUsername,
+                        username: emailOrUsername,
+                        senha
+                    }
+                });
+                
+                if (!resposta.ok) {
+                    throw new Error(apiErrorMessage(dados, 'Erro ao fazer login'));
+                }
+                
+                // Salva credenciais
+                tokenJWT = dados.token;
+                usuarioLogado = dados.usuario;
+                localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, tokenJWT);
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USUARIO, JSON.stringify(usuarioLogado));
+                
+                // Redireciona para dashboard
+                inicializarDashboard();
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro no login:', erro);
+                errorDiv.textContent = erro.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.textContent = 'Entrar';
+            }
+        }
+        
+        /**
+         * Realiza o logout do usuário
+         */
+        function logout() {
+            confirmarAcao('Deseja realmente sair do sistema?', () => {
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.USUARIO);
+                location.reload();
+            });
+        }
+
+        /**
+         * Força logout quando token expira
+         */
+        function forcarLogout(mensagem) {
+            localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
+            localStorage.removeItem(CONFIG.STORAGE_KEYS.USUARIO);
+            tokenJWT = null;
+            usuarioLogado = null;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'flex';
+            if (mensagem) {
+                mostrarErro(mensagem);
+            }
+        }
+        
+        /**
+         * Verifica se usuário já está autenticado
+         */
+        function verificarAutenticacao() {
+            const tokenSalvo = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+            const usuarioSalvo = localStorage.getItem(CONFIG.STORAGE_KEYS.USUARIO);
+            
+            if (tokenSalvo && usuarioSalvo) {
+                tokenJWT = tokenSalvo;
+                usuarioLogado = JSON.parse(usuarioSalvo);
+                inicializarDashboard();
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /**
+         * Inicializa o dashboard após login
+         */
+        function inicializarDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+            const nomeUsuario = usuarioLogado?.nome || usuarioLogado?.full_name || usuarioLogado?.username || 'Usuário';
+            document.getElementById('userName').textContent = nomeUsuario;
+            document.getElementById('userType').textContent = usuarioLogado.role_name || 'USER';
+            atualizarAvatarTopo();
+
+            aplicarPermissoesUI();
+            aplicarConfiguracoes();
+
+            const cfg = carregarConfiguracoes();
+            if (cfg.paginaInicial && podeAcessarPagina(cfg.paginaInicial)) {
+                mostrarPagina(cfg.paginaInicial);
+            } else {
+                mostrarPagina('dashboard');
+            }
+            
+            // Carrega dados iniciais
+            carregarDashboard();
+            carregarProdutos();
+            carregarVendas();
+        }
+        
+        /**
+         * Mostra mensagem de erro no login
+         */
+        function mostrarErroLogin(mensagem) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = mensagem;
+            errorDiv.style.display = 'block';
+        }
+        
+        // ============================================
+        // FUNÇÕES DO DASHBOARD
+        // ============================================
+        
+        /**
+         * Carrega estatísticas do dashboard
+         */
+        async function carregarDashboard() {
+            try {
+                 const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/dashboard/estatisticas');
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar estatísticas');
+                
+                // Atualiza cards de estatísticas
+                atualizarCardsEstatisticas(dados);
+                
+                // Cria gráfico de vendas (não deve quebrar o dashboard inteiro)
+                try {
+                    criarGraficoVendas(dados.grafico);
+                } catch (erroGrafico) {
+                    if (CONFIG.DEBUG) console.error('Erro ao renderizar gráfico:', erroGrafico);
+                }
+
+                 // Tabelas do dashboard
+                 carregarUltimasVendas(dados.ultimas_vendas);
+                 carregarBaixoEstoque(dados.baixo_estoque);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar dashboard:', erro);
+                mostrarErro('Erro ao carregar estatísticas');
+            }
+        }
+        
+        /**
+         * Atualiza cards com estatísticas
+         */
+        function atualizarCardsEstatisticas(dados) {
+            document.getElementById('statsCards').innerHTML = `
+                <div class="stat-card">
+                    <small>Vendas do Mês</small>
+                    <div class="stat-value">R$ ${formatarMoeda(dados.vendas_mes || 0)}</div>
+                    <div class="stat-change">+12.5% vs mês anterior</div>
+                </div>
+                
+                <div class="stat-card">
+                    <small>Estoque Baixo</small>
+                    <div class="stat-value">${dados.estoque_baixo || 0} Produtos</div>
+                    <div class="stat-change" style="color: ${dados.estoque_baixo > 0 ? '#f56565' : '#48bb78'};">
+                        ${dados.estoque_baixo > 0 ? 'Requer atenção' : 'Tudo OK'}
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <small>Novos Pedidos</small>
+                    <div class="stat-value">${dados.pedidos_hoje || 0} Pedidos</div>
+                    <div class="stat-change">Hoje</div>
+                </div>
+                
+                <div class="stat-card">
+                    <small>Lucro do Mês</small>
+                    <div class="stat-value">R$ ${formatarMoeda(dados.lucro_mes || 0)}</div>
+                    <div class="stat-change">+8.3% vs mês anterior</div>
+                </div>
+            `;
+        }
+
+            /**
+             * Carrega últimas vendas na tabela
+             */
+            function carregarUltimasVendas(vendas) {
+                const tbody = document.querySelector('#recentSales tbody');
+                if (!tbody) return;
+
+                if (!vendas || vendas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #a0aec0;">Nenhuma venda registrada</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = vendas.map(venda => {
+                    const statusCor = venda.status === 'COMPLETED' ? '#48bb78' :
+                                      venda.status === 'PENDING' ? '#ed8936' : '#f56565';
+                    const statusTexto = venda.status === 'COMPLETED' ? 'Concluído' :
+                                        venda.status === 'PENDING' ? 'Pendente' : 'Cancelado';
+                    return `
+                        <tr>
+                            <td>${esc(venda.order_number || 'N/A')}</td>
+                            <td>${esc(venda.customer_id || 'N/A')}</td>
+                            <td>R$ ${formatarMoeda(venda.total_amount || 0)}</td>
+                            <td><span style="background: ${statusCor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${statusTexto}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            /**
+             * Carrega produtos com baixo estoque
+             */
+            function carregarBaixoEstoque(produtos) {
+                const tbody = document.querySelector('#lowStock tbody');
+                if (!tbody) return;
+
+                if (!produtos || produtos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #48bb78;"><i class="fas fa-check-circle"></i> Estoque OK</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = produtos.map(prod => {
+                    return `
+                        <tr>
+                            <td>${esc(prod.product_name || 'N/A')}</td>
+                            <td style="color: #f56565; font-weight: bold;">${prod.current_stock}</td>
+                            <td>${prod.minimum_stock}</td>
+                            <td><button class="btn" style="padding: 4px 12px; font-size: 12px;" onclick="abrirModalProduto(${prod.product_id})">Editar</button></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        
+        /**
+         * Cria gráfico de vendas dos últimos 7 dias
+         */
+            function criarGraficoVendas(dados) {
+            const ctx = document.getElementById('salesChart');
+            
+            if (!ctx) return;
+            if (typeof Chart === 'undefined') {
+                const container = ctx.closest('.chart-container');
+                if (container && !container.querySelector('.chart-fallback')) {
+                    const aviso = document.createElement('p');
+                    aviso.className = 'chart-fallback';
+                    aviso.style.color = '#a78bfa';
+                    aviso.style.marginTop = '8px';
+                    aviso.textContent = 'Grafico indisponivel no momento.';
+                    container.appendChild(aviso);
+                }
+                return;
+            }
+            
+            // Destroi gráfico anterior se existir
+            if (graficoVendas) {
+                graficoVendas.destroy();
+            }
+
+                const labels = dados?.dias || ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+                const valores = dados?.vendas || [0, 0, 0, 0, 0, 0, 0];
+            
+            graficoVendas = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                        labels: labels,
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                            data: valores,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#2a1146',
+                            padding: 12,
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Vendas: R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ============================================
+        // FUNÇÕES DE PRODUTOS
+        // ============================================
+        
+        /**
+         * Carrega lista de produtos
+         */
+        let produtosCache = [];
+        let editingProductId = null;
+        let usuariosCache = [];
+        let usuariosFonteCache = [];
+        let usuariosCacheTimestamp = 0;
+        let editingUserId = null;
+        let editingUsuario = null;
+        let debounceBuscaUsuarios = null;
+        let usuariosPaginaAtual = 1;
+        let usuariosPorPagina = 8;
+        const USUARIOS_CACHE_TTL_MS = 60 * 1000;
+
+        async function carregarProdutos() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/produtos');
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar produtos');
+                const produtos = dados.produtos || dados;
+                produtosCache = produtos;
+                
+                const tbody = document.querySelector('#tabelaProdutos tbody');
+                
+                if (produtos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum produto cadastrado</td></tr>';
+                    return;
+                }
+                
+                const podeGerir = usuarioLogado && usuarioLogado.role_level >= 2;
+                const podeExcluirProduto = usuarioLogado && usuarioLogado.role_level >= 3;
+                tbody.innerHTML = produtos.map(prod => `
+                    <tr>
+                        <td><strong>${esc(prod.sku)}</strong></td>
+                        <td>${esc(prod.product_name)}</td>
+                        <td>R$ ${formatarMoeda(prod.selling_price)}</td>
+                        <td>
+                            <span style="color: ${prod.current_stock <= prod.minimum_stock ? '#f56565' : '#48bb78'}; font-weight: 600;">
+                                ${prod.current_stock} ${esc(prod.abbreviation || 'un')}
+                            </span>
+                        </td>
+                        <td>${esc(prod.category_name || '-')}</td>
+                        <td>
+                            ${podeGerir ? `
+                                <button onclick="editarProduto(${prod.product_id})" 
+                                        class="btn btn-secondary" 
+                                        style="padding: 8px 12px; font-size: 12px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="abrirModalMovimentacao('OUT', ${prod.product_id})"
+                                        class="btn"
+                                        style="padding: 8px 12px; font-size: 12px; background: #f56565; color: white; margin-left: 6px;">
+                                    <i class="fas fa-minus-circle"></i>
+                                </button>
+                                ${podeExcluirProduto ? `
+                                <button onclick="deletarProduto(${prod.product_id})"
+                                        class="btn"
+                                        style="padding: 8px 12px; font-size: 12px; background: #e53e3e; color: white; margin-left: 6px;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                ` : ''}
+                            ` : '<span style="color: #a0aec0;">-</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar produtos:', erro);
+                mostrarErro('Erro ao carregar produtos');
+            }
+        }
+        
+        /**
+         * Abre modal para criar novo produto
+         */
+        function abrirModalProduto() {
+            if (!usuarioLogado || usuarioLogado.role_level < 2) {
+                mostrarErro('Apenas gerentes e administradores podem criar produtos');
+                return;
+            }
+            
+            // Limpa campos
+            document.getElementById('prodCodigo').value = '';
+            document.getElementById('prodNome').value = '';
+            document.getElementById('prodCategoria').value = '';
+            document.getElementById('prodPrecoCusto').value = '';
+            document.getElementById('prodPrecoVenda').value = '';
+            document.getElementById('prodEstoque').value = '0';
+            document.getElementById('prodEstoqueMin').value = '10';
+            
+            document.getElementById('modalProduto').classList.add('active');
+        }
+        
+        /**
+         * Salva novo produto
+         */
+        async function salvarProduto() {
+            const produto = {
+                sku: document.getElementById('prodCodigo').value.trim(),
+                product_name: document.getElementById('prodNome').value.trim(),
+                description: document.getElementById('prodCategoria').value.trim(),
+                cost_price: parseFloat(document.getElementById('prodPrecoCusto').value) || 0,
+                selling_price: parseFloat(document.getElementById('prodPrecoVenda').value) || 0,
+                current_stock: parseInt(document.getElementById('prodEstoque').value) || 0,
+                minimum_stock: parseInt(document.getElementById('prodEstoqueMin').value) || 10,
+                unit_id: 1
+            };
+            
+            // Validações
+            if (!produto.sku || !produto.product_name) {
+                mostrarErro('SKU e nome são obrigatórios');
+                return;
+            }
+            
+            if (produto.cost_price <= 0 || produto.selling_price <= 0) {
+                mostrarErro('Preços devem ser maiores que zero');
+                return;
+            }
+            
+            try {
+                const isEdit = !!editingProductId;
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(
+                    isEdit ? `/produtos/${editingProductId}` : '/produtos',
+                    {
+                        method,
+                        body: isEdit ? {
+                            product_name: produto.product_name,
+                            description: produto.description,
+                            cost_price: produto.cost_price,
+                            selling_price: produto.selling_price,
+                            current_stock: produto.current_stock,
+                            minimum_stock: produto.minimum_stock
+                        } : produto
+                    }
+                });
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) {
+                    throw new Error(apiErrorMessage(dados, 'Erro ao salvar produto'));
+                }
+                
+                fecharModal('modalProduto');
+                editingProductId = null;
+                carregarProdutos();
+                mostrarNotificacao(isEdit ? 'Produto atualizado com sucesso!' : 'Produto salvo com sucesso!', 'success');
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao salvar produto:', erro);
+                mostrarErro(erro.message || 'Erro ao salvar produto');
+            }
+        }
+        
+        /**
+         * Edita produto existente
+         */
+        function editarProduto(id) {
+            if (!usuarioLogado || (usuarioLogado.role_level || 0) < 2) {
+                mostrarErro('Apenas gerentes e administradores podem editar produtos');
+                return;
+            }
+            const prod = (produtosCache || []).find(p => p.product_id === id);
+            if (!prod) {
+                mostrarErro('Produto não encontrado');
+                return;
+            }
+
+            editingProductId = id;
+            document.getElementById('prodCodigo').value = prod.sku || '';
+            document.getElementById('prodNome').value = prod.product_name || '';
+            document.getElementById('prodCategoria').value = prod.description || '';
+            document.getElementById('prodPrecoCusto').value = prod.cost_price != null ? prod.cost_price : '';
+            document.getElementById('prodPrecoVenda').value = prod.selling_price != null ? prod.selling_price : '';
+            document.getElementById('prodEstoque').value = prod.current_stock != null ? prod.current_stock : '0';
+            document.getElementById('prodEstoqueMin').value = prod.minimum_stock != null ? prod.minimum_stock : '10';
+
+            abrirModal('modalProduto');
+        }
+
+        async function deletarProduto(id) {
+            confirmarAcao('Deseja excluir este produto? Esta ação não pode ser desfeita.', async () => {
+                try {
+                    const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/produtos/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if (sessionExpired) return;
+                    if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir produto'));
+                    mostrarNotificacao('Produto excluído com sucesso!', 'success');
+                    carregarProdutos();
+                } catch (erro) {
+                    if (CONFIG.DEBUG) console.error('Erro ao excluir produto:', erro);
+                    mostrarErro(erro.message || 'Erro ao excluir produto');
+                }
+            });
+        }
+        
+        // ============================================
+        // FUNÇÕES DE VENDAS
+        // ============================================
+        
+        /**
+         * Carrega lista de vendas
+         */
+        async function carregarVendas() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/vendas?limit=20');
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar vendas');
+                const vendas = dados.vendas || dados;
+                
+                // Tabela completa de vendas
+                atualizarTabelaVendas(vendas);
+                
+                // Últimas vendas no dashboard
+                atualizarUltimasVendas(vendas.slice(0, 5));
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar vendas:', erro);
+                mostrarErro('Erro ao carregar vendas');
+            }
+        }
+        
+        /**
+         * Atualiza tabela completa de vendas
+         */
+        function atualizarTabelaVendas(vendas) {
+            const tbody = document.querySelector('#tabelaVendas tbody');
+            
+            if (!tbody) return;
+            
+            if (vendas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma venda registrada</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = vendas.map(v => `
+                <tr>
+                    <td><strong>${esc(v.order_number)}</strong></td>
+                    <td>${formatarData(v.order_date)}</td>
+                    <td>${esc(v.customer_name || 'Cliente não informado')}</td>
+                    <td><strong>R$ ${formatarMoeda(v.total_amount)}</strong></td>
+                    <td>${esc(v.payment_method || '-')}</td>
+                    <td><span class="badge badge-success">${esc(v.status)}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        /**
+         * Atualiza últimas vendas no dashboard
+         */
+        function atualizarUltimasVendas(vendas) {
+            const tbody = document.querySelector('#recentSales tbody');
+            
+            if (!tbody) return;
+            
+            if (vendas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Sem vendas recentes</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = vendas.map(v => `
+                <tr>
+                    <td><strong>${esc(v.order_number)}</strong></td>
+                    <td>${esc((v.customer_name || 'Cliente').substring(0, 20))}</td>
+                    <td><strong>R$ ${formatarMoeda(v.total_amount)}</strong></td>
+                    <td><span class="badge badge-success">${esc(v.status)}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        // ============================================
+        // FUNÇÕES DE NAVEGAÇÃO
+        // ============================================
+        
+        /**
+         * Navega entre páginas do sistema
+         */
+        function mostrarPagina(pagina) {
+            if (!podeAcessarPagina(pagina)) {
+                mostrarErro('Sua conta não tem acesso a esta página.');
+                return;
+            }
+            // Remove classe active de todas as páginas
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Ativa página selecionada
+            const paginaId = `page${pagina.charAt(0).toUpperCase() + pagina.slice(1)}`;
+            const elemento = document.getElementById(paginaId);
+            
+            if (elemento) {
+                elemento.classList.add('active');
+            }
+            
+            // Atualiza título da página
+            const titulos = {
+                'dashboard': 'Dashboard',
+                'produtos': 'Produtos',
+                'vendas': 'Vendas',
+                'estoque': 'Estoque',
+                'ponto': 'Controle de Ponto',
+                'cadastros': 'Cadastros',
+                'config': 'Configurações',
+                'usuarios': 'Usuários',
+                'auditoria': 'Auditoria'
+            };
+            
+            document.getElementById('pageTitle').textContent = titulos[pagina] || 'Dashboard';
+            
+            // Atualiza menu ativo
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Evita depender do objeto global event (instável em strict mode).
+            const navItemAtivo = document.querySelector(`.nav-item[href="#${pagina}"]`);
+            if (navItemAtivo) navItemAtivo.classList.add('active');
+            
+            // Carrega dados específicos da página
+            if (pagina === 'dashboard') carregarDashboard();
+            if (pagina === 'produtos') carregarProdutos();
+            if (pagina === 'vendas') carregarVendas();
+            if (pagina === 'estoque') carregarDadosEstoque();
+            if (pagina === 'ponto') carregarPonto();
+            if (pagina === 'cadastros') carregarCadastros();
+            if (pagina === 'config') {
+                preencherFormularioConfiguracoes();
+                carregarConfiguracoesSistema();
+            }
+            if (pagina === 'usuarios') carregarUsuarios();
+            if (pagina === 'auditoria') carregarAuditoria();
+        }
+
+        function podeAcessarPagina(pagina) {
+            const nivel = usuarioLogado?.role_level || 0;
+            const permissoes = {
+                dashboard: 1,
+                produtos: 1,
+                vendas: 1,
+                estoque: 1,
+                ponto: 1,
+                cadastros: 2,
+                config: 3,
+                usuarios: 3,
+                auditoria: 3
+            };
+            return nivel >= (permissoes[pagina] || 1);
+        }
+
+        function aplicarPermissoesUI() {
+            const nivel = usuarioLogado?.role_level || 0;
+            document.querySelectorAll('[data-min-role]').forEach(el => {
+                const minRole = parseInt(el.getAttribute('data-min-role') || '1', 10);
+                if (nivel < minRole) {
+                    el.classList.add('hidden');
+                } else {
+                    el.classList.remove('hidden');
+                }
+            });
+
+            const paginaAtiva = document.querySelector('.page.active');
+            if (paginaAtiva) {
+                const minRole = parseInt(paginaAtiva.getAttribute('data-min-role') || '1', 10);
+                if (nivel < minRole) {
+                    mostrarPagina('dashboard');
+                }
+            }
+        }
+        
+        // ============================================
+        // FUNÇÕES AUXILIARES
+        // ============================================
+        
+        /**
+         * Formata valor em moeda brasileira
+         */
+        function formatarMoeda(valor) {
+            const numero = parseFloat(valor) || 0;
+            return numero.toFixed(2).replace('.', ',');
+        }
+        
+        /**
+         * Formata data para padrão brasileiro
+         */
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            const data = new Date(dataString);
+            return data.toLocaleDateString('pt-BR');
+        }
+        
+        /**
+         * Formata data e hora
+         */
+        function formatarDataHora(dataString) {
+            if (!dataString) return '-';
+            const data = new Date(dataString);
+            return data.toLocaleString('pt-BR');
+        }
+        
+        /**
+         * Abre modal específico
+         */
+        function abrirModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+        
+        /**
+         * Fecha modal específico
+         */
+        function fecharModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+        
+        /**
+         * Abre modal de criação de usuário
+         */
+        function abrirModalUsuario(usuario = null) {
+            if (!usuarioLogado || (usuarioLogado.role_level || 0) < 3) {
+                mostrarErro('Apenas administradores podem criar usuários');
+                return;
+            }
+
+            const emEdicao = !!usuario;
+            const senhaInput = document.getElementById('userSenha');
+            const alterarSenhaCheckbox = document.getElementById('userAlterarSenha');
+            const alterarSenhaContainer = document.getElementById('userAlterarSenhaContainer');
+            const titulo = document.getElementById('modalUsuarioTitulo');
+            const botaoSalvar = document.getElementById('btnSalvarUsuario');
+
+            editingUserId = emEdicao ? usuario.user_id : null;
+            editingUsuario = emEdicao ? usuario : null;
+            if (titulo) titulo.textContent = emEdicao ? 'Editar Usuário' : 'Novo Usuário';
+            if (botaoSalvar) {
+                botaoSalvar.innerHTML = emEdicao
+                    ? '<i class="fas fa-save"></i> Atualizar Usuário'
+                    : '<i class="fas fa-user-plus"></i> Salvar Usuário';
+            }
+            
+            if (emEdicao) {
+                const roleMap = { EMPLOYEE: 'funcionario', MANAGER: 'gerente', ADMIN: 'admin' };
+                document.getElementById('userNome').value = usuario.full_name || '';
+                document.getElementById('userEmail').value = usuario.email || '';
+                document.getElementById('userAvatarUrl').value = usuario.avatar_url || '';
+                document.getElementById('userTipo').value = roleMap[usuario.role_name] || 'funcionario';
+                document.getElementById('userAtivo').checked = usuario.is_active !== false;
+                senhaInput.value = '';
+                senhaInput.required = false;
+                senhaInput.disabled = true;
+                senhaInput.placeholder = 'Senha nao alterada nesta tela';
+                if (alterarSenhaContainer) alterarSenhaContainer.style.display = 'block';
+                if (alterarSenhaCheckbox) alterarSenhaCheckbox.checked = false;
+            } else {
+                document.getElementById('userNome').value = '';
+                document.getElementById('userEmail').value = '';
+                document.getElementById('userSenha').value = '';
+                document.getElementById('userAvatarUrl').value = '';
+                document.getElementById('userTipo').value = 'funcionario';
+                document.getElementById('userAtivo').checked = true;
+                senhaInput.required = true;
+                senhaInput.disabled = false;
+                senhaInput.placeholder = 'Senha forte';
+                if (alterarSenhaContainer) alterarSenhaContainer.style.display = 'none';
+                if (alterarSenhaCheckbox) alterarSenhaCheckbox.checked = false;
+            }
+            
+            abrirModal('modalUsuario');
+        }
+        
+        /**
+         * Salva novo usuário
+         */
+        async function salvarUsuario() {
+            const emEdicao = !!editingUserId;
+            const nome = document.getElementById('userNome').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const senha = document.getElementById('userSenha').value;
+            const alterarSenha = !!document.getElementById('userAlterarSenha')?.checked;
+            const avatarUrl = document.getElementById('userAvatarUrl').value.trim();
+            const isActive = document.getElementById('userAtivo').checked;
+            const tipo = document.getElementById('userTipo').value;
+            const mapRole = { funcionario: 'EMPLOYEE', gerente: 'MANAGER', admin: 'ADMIN' };
+            const role_name = mapRole[tipo] || 'EMPLOYEE';
+            const username = (email && email.includes('@')) ? email.split('@')[0] : nome.toLowerCase().replace(/\s+/g, '.');
+            
+            // Validações
+            if (!nome || !email || (!emEdicao && !senha)) {
+                mostrarErro('Todos os campos são obrigatórios');
+                return;
+            }
+            
+            if (!emEdicao && senha.length < 6) {
+                mostrarErro('A senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+
+            if (emEdicao && alterarSenha && senha.length < 6) {
+                mostrarErro('A nova senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+
+            if (avatarUrl && !/^https?:\/\//i.test(avatarUrl)) {
+                mostrarErro('A URL da foto deve começar com http:// ou https://');
+                return;
+            }
+            
+            try {
+                const payloadBase = {
+                    username,
+                    full_name: nome,
+                    role_name,
+                    avatar_url: avatarUrl || null
+                };
+                const payload = emEdicao
+                    ? {
+                        ...payloadBase,
+                        email,
+                        username: editingUsuario?.username || username,
+                        is_active: isActive,
+                        ...(alterarSenha ? { senha } : {})
+                    }
+                    : {
+                        ...payloadBase,
+                        email,
+                        senha,
+                        is_active: isActive
+                    };
+
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(
+                    emEdicao ? `/usuarios/${editingUserId}` : '/usuarios',
+                    {
+                        method: emEdicao ? 'PUT' : 'POST',
+                        body: payload
+                    }
+                );
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) {
+                    throw new Error(apiErrorMessage(dados, emEdicao ? 'Erro ao atualizar usuário' : 'Erro ao criar usuário'));
+                }
+                
+                fecharModal('modalUsuario');
+                mostrarNotificacao(emEdicao ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!', 'success');
+                editingUserId = null;
+                editingUsuario = null;
+                carregarUsuarios(true, true);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao salvar usuário:', erro);
+                mostrarErro(erro.message || 'Erro ao salvar usuário');
+            }
+        }
+
+        function editarUsuario(userId) {
+            if (!userId) return;
+            if (!usuarioLogado || (usuarioLogado.role_level || 0) < 3) {
+                mostrarErro('Apenas administradores podem editar usuários');
+                return;
+            }
+            const usuario = (usuariosCache || []).find(u => Number(u.user_id) === Number(userId));
+            if (!usuario) {
+                mostrarErro('Usuário não encontrado');
+                return;
+            }
+            abrirModalUsuario(usuario);
+        }
+
+        function alternarCampoSenhaUsuario() {
+            const checkbox = document.getElementById('userAlterarSenha');
+            const inputSenha = document.getElementById('userSenha');
+            if (!checkbox || !inputSenha) return;
+
+            const ativado = !!checkbox.checked;
+            inputSenha.disabled = !ativado;
+            inputSenha.required = ativado;
+            inputSenha.value = '';
+            inputSenha.placeholder = ativado ? 'Digite a nova senha' : 'Senha nao alterada nesta tela';
+        }
+
+        /**
+         * Exclui usuário
+         */
+        async function deletarUsuario(userId) {
+            if (!userId) return;
+            confirmarAcao('Deseja excluir este usuário?', async () => {
+                try {
+                    const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/usuarios/${userId}`, {
+                        method: 'DELETE'
+                    });
+                    if (sessionExpired) return;
+                    if (!resposta.ok) {
+                        throw new Error(apiErrorMessage(dados, 'Erro ao excluir usuário'));
+                    }
+
+                    mostrarNotificacao('Usuário excluído com sucesso!', 'success');
+                    carregarUsuarios(true, true);
+                } catch (erro) {
+                    if (CONFIG.DEBUG) console.error('Erro ao excluir usuário:', erro);
+                    mostrarErro(erro.message || 'Erro ao excluir usuário');
+                }
+            });
+        }
+
+        async function alternarStatusUsuario(userId, ativoAtual) {
+            if (!userId) return;
+            const proximoStatus = !ativoAtual;
+            const acao = proximoStatus ? 'ativar' : 'inativar';
+            confirmarAcao(`Deseja ${acao} este usuário?`, async () => {
+                try {
+                    const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/usuarios/${userId}`, {
+                        method: 'PUT',
+                        body: { is_active: proximoStatus }
+                    });
+                    if (sessionExpired) return;
+                    if (!resposta.ok) {
+                        throw new Error(apiErrorMessage(dados, 'Erro ao atualizar status do usuário'));
+                    }
+                    mostrarNotificacao(`Usuário ${proximoStatus ? 'ativado' : 'inativado'} com sucesso!`, 'success');
+                    carregarUsuarios(false, true);
+                } catch (erro) {
+                    mostrarErro(erro.message || 'Erro ao atualizar status do usuário');
+                }
+            });
+        }
+        
+        // ============================================
+        // FUNÇÕES EM DESENVOLVIMENTO
+        // ============================================
+
+        async function carregarDadosEstoque() {
+            await Promise.all([
+                carregarSaldoEstoque(),
+                carregarMovimentacoes()
+            ]);
+        }
+
+        async function carregarSaldoEstoque() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/produtos?limit=500');
+                if (sessionExpired) return;
+
+                if (!resposta.ok) throw new Error('Erro ao carregar produtos');
+                const produtos = dados.produtos || [];
+                const tbody = document.querySelector('#tabelaSaldoEstoque tbody');
+                if (!tbody) return;
+
+                if (!produtos || produtos.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 30px; color: #a0aec0;">
+                                Nenhum produto encontrado
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = produtos.map(prod => {
+                    const atual = Number(prod.current_stock || 0);
+                    const minimo = Number(prod.minimum_stock || 0);
+                    const critico = atual <= minimo;
+                    const statusLabel = critico ? 'Baixo' : 'OK';
+                    const statusBg = critico ? '#fff4eb' : '#eaf9f0';
+                    const statusCor = critico ? '#c05621' : '#2f855a';
+
+                    return `
+                        <tr>
+                            <td>${esc(prod.product_name || '-')}</td>
+                            <td>${esc(prod.sku || '-')}</td>
+                            <td style="font-weight: 700; color: ${critico ? '#c05621' : '#2d3748'};">${atual}</td>
+                            <td>${minimo}</td>
+                            <td>
+                                <span style="background: ${statusBg}; color: ${statusCor}; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;">
+                                    ${statusLabel}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (erro) {
+                const tbody = document.querySelector('#tabelaSaldoEstoque tbody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 30px; color: #f56565;">
+                                Erro ao carregar saldo de estoque
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+        
+        /**
+         * Carrega movimentações de estoque
+         */
+        async function carregarMovimentacoes() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/movimentacoes?limit=50');
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar movimentações');
+                const movimentacoes = dados.movimentacoes || [];
+                
+                const tbody = document.querySelector('#tabelaMovimentacoes tbody');
+                
+                if (!movimentacoes || movimentacoes.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: #a0aec0;">
+                                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
+                                Nenhuma movimentação registrada
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = movimentacoes.map(mov => {
+                    const data = new Date(mov.movement_date).toLocaleString('pt-BR');
+                    const tipo = mov.movement_type;
+                    const quantidade = Math.abs(mov.quantity);
+                    
+                    let tipoLabel = '';
+                    let tipoCor = '';
+                    
+                    if (tipo === 'IN') {
+                        tipoLabel = 'ENTRADA';
+                        tipoCor = '#48bb78';
+                    } else if (tipo === 'OUT') {
+                        tipoLabel = 'SAÍDA';
+                        tipoCor = '#f56565';
+                    } else {
+                        tipoLabel = 'AJUSTE';
+                        tipoCor = '#ed8936';
+                    }
+                    
+                    return `
+                        <tr>
+                            <td>${esc(data)}</td>
+                            <td>${esc(mov.product_name || 'N/A')}</td>
+                            <td>${esc(mov.sku || '-')}</td>
+                            <td>
+                                <span style="background: ${tipoCor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                    ${tipoLabel}
+                                </span>
+                            </td>
+                            <td style="font-weight: 600; color: ${mov.quantity > 0 ? '#48bb78' : '#f56565'};">
+                                ${mov.quantity > 0 ? '+' : ''}${mov.quantity}
+                            </td>
+                            <td>${esc(mov.usuario_nome || 'Sistema')}</td>
+                            <td>${esc(mov.notes || '-')}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                if (CONFIG.DEBUG) console.log('Movimentações carregadas:', movimentacoes.length);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar movimentações:', erro);
+                mostrarNotificacao('Erro ao carregar movimentações', 'error');
+            }
+        }
+        
+        /**
+         * Abre modal de movimentação
+         */
+        async function abrirModalMovimentacao(tipo, productId = null) {
+            try {
+                // Define o tipo de movimentação
+                const movTipoInput = document.getElementById('movTipo');
+                if (movTipoInput) movTipoInput.value = tipo;
+                
+                // Atualiza título do modal
+                const titulos = {
+                    'IN': 'Entrada de Estoque',
+                    'OUT': 'Saída de Estoque',
+                    'ADJUSTMENT': 'Ajuste de Estoque'
+                };
+                const tituloEl = document.getElementById('tituloMovimentacao');
+                if (tituloEl) tituloEl.textContent = titulos[tipo] || 'Nova Movimentação';
+                
+                // Carrega produtos para o select
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/produtos?limit=500');
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar produtos (Status: ' + resposta.status + ')');
+                const produtos = dados.produtos || [];
+                
+                const select = document.getElementById('movProduto');
+                if (!select) throw new Error('Campo de seleção de produto não encontrado');
+                
+                select.innerHTML = '<option value="">Selecione o produto...</option>' + 
+                    produtos.map(p => `
+                        <option value="${p.product_id}">
+                            ${p.product_name} (${p.sku}) - Estoque: ${p.current_stock}
+                        </option>
+                    `).join('');
+                
+                if (productId) {
+                    select.value = String(productId);
+                }
+                
+                // Limpa o formulário
+                const campos = ['movQuantidade', 'movReferenciaId', 'movNotas'];
+                campos.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                const refTipoEl = document.getElementById('movReferenciaTipo');
+                if (refTipoEl) refTipoEl.value = tipo;
+                
+                abrirModal('modalMovimentacao');
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao abrir modal:', erro);
+                mostrarErro('Erro ao carregar produtos: ' + erro.message);
+            }
+        }
+        
+        /**
+         * Salva movimentação
+         */
+        async function salvarMovimentacao() {
+            try {
+                const productId = document.getElementById('movProduto')?.value;
+                const tipo = document.getElementById('movTipo')?.value;
+                const quantidadeInput = document.getElementById('movQuantidade')?.value;
+                const refTipo = document.getElementById('movReferenciaTipo')?.value;
+                const refId = document.getElementById('movReferenciaId')?.value;
+                const notas = document.getElementById('movNotas')?.value;
+                
+                // Validações
+                if (!productId || productId === '') {
+                    mostrarErro('Selecione um produto na lista');
+                    return;
+                }
+                
+                const quantidade = parseInt(quantidadeInput) || 0;
+                if (quantidade <= 0) {
+                    mostrarErro('Digite uma quantidade válida (maior que 0)');
+                    return;
+                }
+                
+                if (!tipo || tipo === '') {
+                    mostrarErro('Tipo de movimentação não definido. Clique em Entrada, Saída ou Ajuste');
+                    return;
+                }
+                
+                // Monta o payload
+                const payload = {
+                    product_id: parseInt(productId),
+                    movement_type: tipo,
+                    quantity: quantidade,
+                    notes: notas || null
+                };
+                
+                if (refTipo && refTipo !== '') payload.reference_type = refTipo;
+                if (refId && refId !== '') payload.reference_id = parseInt(refId);
+                
+                // Envia para API
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/movimentacoes', {
+                    method: 'POST',
+                    body: payload
+                });
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) {
+                    throw new Error(apiErrorMessage(dados, 'Erro ao salvar movimentação'));
+                }
+                
+                mostrarNotificacao('✅ Movimentação registrada com sucesso!', 'success');
+                fecharModal('modalMovimentacao');
+                
+                // Aguarda um pouco e recarrega
+                setTimeout(() => {
+                    carregarDadosEstoque();
+                    carregarProdutos();
+                }, 500);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao salvar movimentação:', erro);
+                mostrarErro(erro.message || 'Erro ao salvar movimentação. Verifique os dados e tente novamente.');
+            }
+        }
+        
+        /**
+         * Carrega registros de ponto
+         */
+        async function carregarPonto() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/ponto');
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar ponto');
+                const registros = dados.registros || dados || [];
+                
+                const tbody = document.querySelector('#tabelaPonto tbody');
+                if (!tbody) return;
+                
+                if (!registros || registros.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #a0aec0;">
+                                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
+                                Nenhum registro de ponto
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = registros.map(reg => {
+                    const usuario = esc(reg.usuario_nome || reg.username || 'Você');
+                    const entrada = reg.clock_in ? new Date(reg.clock_in).toLocaleString('pt-BR') : '-';
+                    const saida = reg.clock_out ? new Date(reg.clock_out).toLocaleString('pt-BR') : 'Aberto';
+                    const duracao = reg.duration_minutes 
+                        ? `${Math.floor(reg.duration_minutes / 60)}h ${Math.floor(reg.duration_minutes % 60)}min`
+                        : '-';
+                    const data = reg.clock_in ? new Date(reg.clock_in).toLocaleDateString('pt-BR') : '-';
+                    
+                    return `
+                        <tr>
+                            <td>${usuario}</td>
+                            <td>${entrada}</td>
+                            <td>${saida}</td>
+                            <td>${duracao}</td>
+                            <td>${data}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+            } catch (erro) {
+                mostrarErro(erro.message || 'Erro ao carregar registros de ponto');
+            }
+        }
+        
+        function obterIniciais(nome) {
+            if (!nome) return 'US';
+            const partes = String(nome).trim().split(/\s+/).filter(Boolean);
+            if (partes.length === 0) return 'US';
+            if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+            return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase();
+        }
+
+        function escaparAtributoHtml(valor) {
+            return String(valor || '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Escapa HTML para uso seguro em innerHTML (previne XSS armazenado)
+        function esc(valor) {
+            return String(valor == null ? '' : valor)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+        }
+
+        function atualizarAvatarTopo() {
+            const avatarImg = document.getElementById('avatarImage');
+            const avatarFallback = document.getElementById('avatarFallback');
+            if (!avatarImg || !avatarFallback) return;
+
+            const nome = usuarioLogado?.nome || usuarioLogado?.full_name || usuarioLogado?.username || 'Usuário';
+            const avatarUrl = (usuarioLogado?.avatar_url || '').trim();
+
+            avatarFallback.textContent = obterIniciais(nome);
+
+            if (avatarUrl) {
+                avatarImg.src = avatarUrl;
+                avatarImg.style.display = 'block';
+                avatarFallback.style.display = 'none';
+                avatarImg.onerror = () => {
+                    avatarImg.style.display = 'none';
+                    avatarFallback.style.display = 'inline';
+                };
+            } else {
+                avatarImg.removeAttribute('src');
+                avatarImg.style.display = 'none';
+                avatarFallback.style.display = 'inline';
+            }
+        }
+
+        function renderizarAvatarTabela(nome, avatarUrl) {
+            const iniciais = obterIniciais(nome);
+            if (avatarUrl) {
+                return `<img src="${escaparAtributoHtml(avatarUrl)}" alt="${escaparAtributoHtml(iniciais)}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #e2e8f0;">`;
+            }
+            return `<span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--purple-600), var(--purple-500)); color: #fff; font-size: 12px; font-weight: 700;">${iniciais}</span>`;
+        }
+
+        function atualizarContadoresFiltroUsuarios(usuarios) {
+            const select = document.getElementById('usuariosFiltroStatus');
+            if (!select) return;
+            const lista = Array.isArray(usuarios) ? usuarios : [];
+            const ativos = lista.filter(u => u && u.is_active).length;
+            const inativos = lista.filter(u => u && !u.is_active).length;
+            const total = lista.length;
+
+            const optAtivos = select.querySelector('option[value="ativos"]');
+            const optTodos = select.querySelector('option[value="todos"]');
+            const optInativos = select.querySelector('option[value="inativos"]');
+            if (optAtivos) optAtivos.textContent = `Ativos (${ativos})`;
+            if (optTodos) optTodos.textContent = `Todos (${total})`;
+            if (optInativos) optInativos.textContent = `Inativos (${inativos})`;
+        }
+
+        function atualizarEstiloFiltroUsuarios() {
+            const select = document.getElementById('usuariosFiltroStatus');
+            if (!select) return;
+
+            const cores = {
+                ativos: { bg: '#eaf9f0', border: '#48bb78', text: '#1f7a4a' },
+                todos: { bg: '#eef2ff', border: '#8b5cf6', text: '#5b21b6' },
+                inativos: { bg: '#fff4eb', border: '#ed8936', text: '#9a4b00' }
+            };
+            const escolha = cores[select.value] || cores.ativos;
+            select.style.backgroundColor = escolha.bg;
+            select.style.borderColor = escolha.border;
+            select.style.color = escolha.text;
+            select.style.boxShadow = `0 0 0 2px ${escolha.bg}`;
+        }
+
+        function onFiltroStatusUsuariosChange() {
+            const select = document.getElementById('usuariosFiltroStatus');
+            if (!select) return;
+            localStorage.setItem(CONFIG.STORAGE_KEYS.USUARIOS_STATUS, select.value || 'ativos');
+            atualizarEstiloFiltroUsuarios();
+            carregarUsuarios(true);
+        }
+
+        function onBuscarUsuariosInput() {
+            const termo = (document.getElementById('usuariosBusca')?.value || '').trim();
+            localStorage.setItem(CONFIG.STORAGE_KEYS.USUARIOS_BUSCA, termo);
+            atualizarEstadoBotaoLimparBuscaUsuarios();
+            usuariosPaginaAtual = 1;
+            if (debounceBuscaUsuarios) clearTimeout(debounceBuscaUsuarios);
+            debounceBuscaUsuarios = setTimeout(() => {
+                carregarUsuarios();
+            }, 250);
+        }
+
+        function atualizarPaginacaoUsuarios(total, paginaAtual, totalPaginas) {
+            const info = document.getElementById('usuariosPaginacaoInfo');
+            const prevBtn = document.getElementById('usuariosPrevBtn');
+            const nextBtn = document.getElementById('usuariosNextBtn');
+            if (!info || !prevBtn || !nextBtn) return;
+
+            if (total <= 0) {
+                info.textContent = '0 usuários';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+
+            info.textContent = `${total} usuário${total > 1 ? 's' : ''} • Página ${paginaAtual} de ${totalPaginas}`;
+            prevBtn.disabled = paginaAtual <= 1;
+            nextBtn.disabled = paginaAtual >= totalPaginas;
+        }
+
+        function mudarPaginaUsuarios(direcao) {
+            usuariosPaginaAtual += direcao;
+            if (usuariosPaginaAtual < 1) usuariosPaginaAtual = 1;
+            carregarUsuarios();
+        }
+
+        function alterarUsuariosPorPagina() {
+            const select = document.getElementById('usuariosPageSize');
+            const novoValor = parseInt(select?.value || '8', 10);
+            usuariosPorPagina = Number.isFinite(novoValor) && novoValor > 0 ? novoValor : 8;
+            localStorage.setItem(CONFIG.STORAGE_KEYS.USUARIOS_PAGE_SIZE, String(usuariosPorPagina));
+            usuariosPaginaAtual = 1;
+            carregarUsuarios();
+        }
+
+        function restaurarPreferenciasPaginacaoUsuarios() {
+            const select = document.getElementById('usuariosPageSize');
+            if (!select) return;
+            const salvo = parseInt(localStorage.getItem(CONFIG.STORAGE_KEYS.USUARIOS_PAGE_SIZE) || '8', 10);
+            usuariosPorPagina = Number.isFinite(salvo) && [8, 15, 30].includes(salvo) ? salvo : 8;
+            select.value = String(usuariosPorPagina);
+        }
+
+        function restaurarFiltroStatusUsuarios() {
+            const select = document.getElementById('usuariosFiltroStatus');
+            if (!select) return;
+            const salvo = localStorage.getItem(CONFIG.STORAGE_KEYS.USUARIOS_STATUS) || 'ativos';
+            const permitido = ['ativos', 'todos', 'inativos'];
+            select.value = permitido.includes(salvo) ? salvo : 'ativos';
+            atualizarEstiloFiltroUsuarios();
+        }
+
+        function atualizarEstadoBotaoLimparBuscaUsuarios() {
+            const btnLimpar = document.getElementById('usuariosBuscaLimpar');
+            if (!btnLimpar) return;
+            const termo = (document.getElementById('usuariosBusca')?.value || '').trim();
+            btnLimpar.style.display = termo ? 'inline-flex' : 'none';
+        }
+
+        function restaurarBuscaUsuarios() {
+            const inputBusca = document.getElementById('usuariosBusca');
+            if (!inputBusca) return;
+            const termoSalvo = localStorage.getItem(CONFIG.STORAGE_KEYS.USUARIOS_BUSCA) || '';
+            inputBusca.value = termoSalvo;
+            atualizarEstadoBotaoLimparBuscaUsuarios();
+        }
+
+        function limparBuscaUsuarios() {
+            const inputBusca = document.getElementById('usuariosBusca');
+            if (!inputBusca) return;
+            inputBusca.value = '';
+            localStorage.removeItem(CONFIG.STORAGE_KEYS.USUARIOS_BUSCA);
+            atualizarEstadoBotaoLimparBuscaUsuarios();
+            usuariosPaginaAtual = 1;
+            carregarUsuarios();
+        }
+
+        function cacheUsuariosValido() {
+            return usuariosCacheTimestamp > 0 && (Date.now() - usuariosCacheTimestamp) < USUARIOS_CACHE_TTL_MS;
+        }
+
+        function aplicarFiltroUsuarios(lista, filtroStatus, termoBusca) {
+            let usuarios = Array.isArray(lista) ? lista : [];
+
+            if (filtroStatus === 'inativos') {
+                usuarios = usuarios.filter(u => !u.is_active);
+            } else if (filtroStatus === 'ativos') {
+                usuarios = usuarios.filter(u => u.is_active);
+            }
+
+            if (termoBusca) {
+                usuarios = usuarios.filter(u => {
+                    const nome = String(u?.full_name || '').toLowerCase();
+                    const email = String(u?.email || '').toLowerCase();
+                    const username = String(u?.username || '').toLowerCase();
+                    return nome.includes(termoBusca) || email.includes(termoBusca) || username.includes(termoBusca);
+                });
+            }
+
+            return usuarios;
+        }
+
+        function renderizarTabelaUsuarios(usuariosOriginais, filtroStatus, termoBusca) {
+            atualizarContadoresFiltroUsuarios(usuariosOriginais);
+
+            const usuariosFiltrados = aplicarFiltroUsuarios(usuariosOriginais, filtroStatus, termoBusca);
+            const totalUsuarios = usuariosFiltrados.length;
+            const totalPaginas = Math.max(1, Math.ceil(totalUsuarios / usuariosPorPagina));
+            if (usuariosPaginaAtual > totalPaginas) usuariosPaginaAtual = totalPaginas;
+            const inicio = (usuariosPaginaAtual - 1) * usuariosPorPagina;
+            const usuariosPagina = usuariosFiltrados.slice(inicio, inicio + usuariosPorPagina);
+
+            usuariosCache = usuariosOriginais;
+            const tbody = document.querySelector('#tabelaUsuarios tbody');
+            if (!tbody) return;
+
+            atualizarPaginacaoUsuarios(totalUsuarios, usuariosPaginaAtual, totalPaginas);
+
+            if (usuariosFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #a0aec0;">Nenhum usuário encontrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = usuariosPagina.map(u => {
+                const status = u.is_active ? 'Ativo' : 'Inativo';
+                const statusCor = u.is_active ? '#48bb78' : '#f56565';
+                const podeEditar = (usuarioLogado?.role_level || 0) >= 3;
+                const podeExcluir = (usuarioLogado?.role_level || 0) >= 3;
+                const criadoEm = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '-';
+                const ultimoLogin = u.last_login ? new Date(u.last_login).toLocaleString('pt-BR') : '-';
+                return `
+                    <tr>
+                        <td>${renderizarAvatarTabela(u.full_name || u.username, u.avatar_url)}</td>
+                        <td>${esc(u.full_name || '-')}</td>
+                        <td>${esc(u.email || '-')}</td>
+                        <td>${esc(u.username || '-')}</td>
+                        <td>${esc(u.role_name || '-')}</td>
+                        <td>${criadoEm}</td>
+                        <td>${ultimoLogin}</td>
+                        <td><span style="color: ${statusCor}; font-weight: 600;">${status}</span></td>
+                        <td>
+                            ${podeEditar ? `
+                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="editarUsuario(${u.user_id})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: ${u.is_active ? '#ed8936' : '#48bb78'}; color: white; margin-left: 6px;" onclick="alternarStatusUsuario(${u.user_id}, ${u.is_active ? 'true' : 'false'})">
+                                    <i class="fas ${u.is_active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                                </button>
+                            ` : ''}
+                            ${podeExcluir ? `
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: #f56565; color: white; margin-left: 6px;" onclick="deletarUsuario(${u.user_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : '<span style="color: #a0aec0;">-</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Carrega lista de usuários
+         */
+        async function carregarUsuarios(resetPagina = false, forceReload = false) {
+            try {
+                if (resetPagina) usuariosPaginaAtual = 1;
+                const filtroStatus = document.getElementById('usuariosFiltroStatus')?.value || 'ativos';
+                const termoBusca = (document.getElementById('usuariosBusca')?.value || '').trim().toLowerCase();
+                atualizarEstiloFiltroUsuarios();
+                atualizarEstadoBotaoLimparBuscaUsuarios();
+
+                if (!forceReload && cacheUsuariosValido()) {
+                    renderizarTabelaUsuarios(usuariosFonteCache, filtroStatus, termoBusca);
+                    return;
+                }
+
+                const incluirInativos = filtroStatus === 'ativos' ? '0' : '1';
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/usuarios?incluir_inativos=${incluirInativos}`);
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) throw new Error('Erro ao carregar usuários');
+                
+                const usuariosOriginais = dados.usuarios || dados || [];
+                usuariosFonteCache = Array.isArray(usuariosOriginais) ? usuariosOriginais : [];
+                usuariosCacheTimestamp = Date.now();
+
+                renderizarTabelaUsuarios(usuariosFonteCache, filtroStatus, termoBusca);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao carregar usuários:', erro);
+                mostrarErro(erro.message || 'Erro ao carregar usuários');
+            }
+        }
+
+        async function carregarCadastros() {
+            await Promise.all([carregarCategorias(), carregarMarcas(), carregarUnidades()]);
+        }
+
+        async function carregarCategorias() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/categorias');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error(apiErrorMessage(dados, 'Erro ao carregar categorias'));
+                const categorias = dados.categorias || [];
+                const tbody = document.querySelector('#tabelaCategorias tbody');
+                if (!tbody) return;
+                if (categorias.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a0aec0;">Nenhuma categoria</td></tr>';
+                    return;
+                }
+                const podeExcluir = (usuarioLogado?.role_level || 0) >= 3;
+                tbody.innerHTML = categorias.map(c => `
+                    <tr>
+                        <td>${esc(c.category_name || '-')}</td>
+                        <td>${esc(c.description || '-')}</td>
+                        <td>
+                            ${podeExcluir ? `
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: #f56565; color: white;" onclick="deletarCategoria(${c.category_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : '<span style="color: #a0aec0;">-</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (erro) {
+                mostrarErro(erro.message || 'Erro ao carregar categorias');
+            }
+        }
+
+        async function criarCategoria() {
+            const nome = document.getElementById('catNome')?.value.trim();
+            const desc = document.getElementById('catDescricao')?.value.trim();
+            if (!nome) return mostrarErro('Nome da categoria é obrigatório');
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/categorias', {
+                method: 'POST',
+                body: { category_name: nome, description: desc || null }
+            });
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao criar categoria'));
+            document.getElementById('catNome').value = '';
+            document.getElementById('catDescricao').value = '';
+            mostrarNotificacao('Categoria criada!', 'success');
+            carregarCategorias();
+        }
+
+        async function deletarCategoria(id) {
+            confirmarAcao('Deseja excluir esta categoria?', async () => {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/categorias/${id}`, {
+                    method: 'DELETE'
+                });
+                if (sessionExpired) return;
+                if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir categoria'));
+                mostrarNotificacao('Categoria excluída!', 'success');
+                carregarCategorias();
+            });
+        }
+
+        async function carregarMarcas() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/marcas');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error(apiErrorMessage(dados, 'Erro ao carregar marcas'));
+                const marcas = dados.marcas || [];
+                const tbody = document.querySelector('#tabelaMarcas tbody');
+                if (!tbody) return;
+                if (marcas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a0aec0;">Nenhuma marca</td></tr>';
+                    return;
+                }
+                const podeExcluir = (usuarioLogado?.role_level || 0) >= 3;
+                tbody.innerHTML = marcas.map(m => `
+                    <tr>
+                        <td>${esc(m.brand_name || '-')}</td>
+                        <td>${esc(m.description || '-')}</td>
+                        <td>
+                            ${podeExcluir ? `
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: #f56565; color: white;" onclick="deletarMarca(${m.brand_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : '<span style="color: #a0aec0;">-</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (erro) {
+                mostrarErro(erro.message || 'Erro ao carregar marcas');
+            }
+        }
+
+        async function criarMarca() {
+            const nome = document.getElementById('marcaNome')?.value.trim();
+            const desc = document.getElementById('marcaDescricao')?.value.trim();
+            if (!nome) return mostrarErro('Nome da marca é obrigatório');
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/marcas', {
+                method: 'POST',
+                body: { brand_name: nome, description: desc || null }
+            });
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao criar marca'));
+            document.getElementById('marcaNome').value = '';
+            document.getElementById('marcaDescricao').value = '';
+            mostrarNotificacao('Marca criada!', 'success');
+            carregarMarcas();
+        }
+
+        async function deletarMarca(id) {
+            confirmarAcao('Deseja excluir esta marca?', async () => {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/marcas/${id}`, {
+                    method: 'DELETE'
+                });
+                if (sessionExpired) return;
+                if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir marca'));
+                mostrarNotificacao('Marca excluída!', 'success');
+                carregarMarcas();
+            });
+        }
+
+        async function carregarUnidades() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/unidades');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error(apiErrorMessage(dados, 'Erro ao carregar unidades'));
+                const unidades = dados.unidades || [];
+                const tbody = document.querySelector('#tabelaUnidades tbody');
+                if (!tbody) return;
+                if (unidades.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a0aec0;">Nenhuma unidade</td></tr>';
+                    return;
+                }
+                const podeExcluir = (usuarioLogado?.role_level || 0) >= 3;
+                tbody.innerHTML = unidades.map(u => `
+                    <tr>
+                        <td>${esc(u.unit_name || '-')}</td>
+                        <td>${esc(u.abbreviation || '-')}</td>
+                        <td>
+                            ${podeExcluir ? `
+                                <button class="btn" style="padding: 6px 10px; font-size: 12px; background: #f56565; color: white;" onclick="deletarUnidade(${u.unit_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : '<span style="color: #a0aec0;">-</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (erro) {
+                mostrarErro(erro.message || 'Erro ao carregar unidades');
+            }
+        }
+
+        async function criarUnidade() {
+            const nome = document.getElementById('unidadeNome')?.value.trim();
+            const abrev = document.getElementById('unidadeAbrev')?.value.trim();
+            if (!nome || !abrev) return mostrarErro('Nome e abreviação são obrigatórios');
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/unidades', {
+                method: 'POST',
+                body: { unit_name: nome, abbreviation: abrev }
+            });
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao criar unidade'));
+            document.getElementById('unidadeNome').value = '';
+            document.getElementById('unidadeAbrev').value = '';
+            mostrarNotificacao('Unidade criada!', 'success');
+            carregarUnidades();
+        }
+
+        async function deletarUnidade(id) {
+            confirmarAcao('Deseja excluir esta unidade?', async () => {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest(`/unidades/${id}`, {
+                    method: 'DELETE'
+                });
+                if (sessionExpired) return;
+                if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao excluir unidade'));
+                mostrarNotificacao('Unidade excluída!', 'success');
+                carregarUnidades();
+            });
+        }
+
+        async function carregarAuditoria() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/auditoria?limit=200');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error('Erro ao carregar auditoria');
+                const logs = dados.logs || [];
+                const tbody = document.querySelector('#tabelaAuditoria tbody');
+                if (!tbody) return;
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #a0aec0;">Nenhum log</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = logs.map(l => `
+                    <tr>
+                        <td>${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '-'}</td>
+                        <td>${esc(l.usuario_nome || l.username || '-')}</td>
+                        <td>${esc(l.action || '-')}</td>
+                        <td>${esc(l.resource_type || '-')}</td>
+                        <td>${esc(l.resource_id || '-')}</td>
+                        <td>${esc(l.ip_address || '-')}</td>
+                    </tr>
+                `).join('');
+            } catch (erro) {
+                mostrarErro(erro.message || 'Erro ao carregar auditoria');
+            }
+        }
+
+        async function carregarConfiguracoesSistema() {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/configuracoes');
+                if (sessionExpired) return;
+                if (!resposta.ok) throw new Error('Erro ao carregar configurações');
+                const cfg = dados.configuracoes || {};
+                document.getElementById('cfgEmpresa').value = cfg.empresa_nome || '';
+                document.getElementById('cfgMoeda').value = cfg.moeda || '';
+                document.getElementById('cfgImposto').value = cfg.imposto_padrao || '';
+                document.getElementById('cfgEstoqueMin').value = cfg.estoque_minimo_padrao || '';
+            } catch (erro) {
+                mostrarErro(erro.message || 'Erro ao carregar configurações');
+            }
+        }
+
+        async function salvarConfiguracoesSistema() {
+            const payload = {
+                empresa_nome: document.getElementById('cfgEmpresa')?.value || '',
+                moeda: document.getElementById('cfgMoeda')?.value || '',
+                imposto_padrao: document.getElementById('cfgImposto')?.value || '0',
+                estoque_minimo_padrao: document.getElementById('cfgEstoqueMin')?.value || '0'
+            };
+            const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/configuracoes', {
+                method: 'PUT',
+                body: payload
+            });
+            if (sessionExpired) return;
+            if (!resposta.ok) return mostrarErro(apiErrorMessage(dados, 'Erro ao salvar configurações'));
+            mostrarNotificacao('Configurações globais salvas!', 'success');
+        }
+        
+        /**
+         * Registra ponto (entrada/saída)
+         */
+        async function registrarPonto(tipo) {
+            try {
+                const { response: resposta, data: dados, sessionExpired } = await apiJsonRequest('/ponto', {
+                    method: 'POST',
+                    body: { tipo }
+                });
+                if (sessionExpired) return;
+                
+                if (!resposta.ok) {
+                    throw new Error(apiErrorMessage(dados, 'Erro ao registrar ponto'));
+                }
+                
+                const tipoLabel = tipo === 'entrada' ? 'Entrada' : 'Saída';
+                mostrarNotificacao('✅ ' + tipoLabel + ' registrada com sucesso!', 'success');
+                
+                // Recarrega os registros de ponto
+                setTimeout(() => {
+                    carregarPonto();
+                }, 500);
+                
+            } catch (erro) {
+                if (CONFIG.DEBUG) console.error('Erro ao registrar ponto:', erro);
+                mostrarErro(erro.message || 'Erro ao registrar ponto. Tente novamente.');
+            }
+        }
+        
+        // ============================================
+        // INICIALIZAÇÃO DO SISTEMA
+        // ============================================
+        
+        /**
+         * Executa quando a página carrega
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            if (CONFIG.DEBUG) console.log('fluxa - Inicializado');
+
+            restaurarBuscaUsuarios();
+            restaurarPreferenciasPaginacaoUsuarios();
+            restaurarFiltroStatusUsuarios();
+            
+            // Verifica se usuário já está autenticado
+            verificarAutenticacao();
+            
+            // Adiciona listener para tecla Enter no login
+            document.getElementById('senha').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

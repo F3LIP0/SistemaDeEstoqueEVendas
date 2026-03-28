@@ -1,0 +1,45 @@
+name: android-ci
+
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
+
+jobs:
+  test-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Expo Doctor
+        run: npm run doctor
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test -- --runInBand --passWithNoTests
+
+      - name: Build check (Expo export)
+        run: npm run build:check
